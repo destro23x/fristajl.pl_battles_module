@@ -1,0 +1,93 @@
+name: App
+description: Atmos workflows for managing app components.
+
+workflows:
+  plan-all-alb:
+    description: |
+      Run 'terraform plan' on all alb components in the stack
+    steps:
+      - command: terraform plan alb-routing --stack prod
+
+  apply-all-alb:
+    description: |
+      Run 'terraform apply' on all alb components in the stack
+    steps:
+      - command: terraform apply alb-routing --stack prod -auto-approve
+
+  destroy-all-alb:
+    description: |
+      Run 'terraform destroy' on all alb components in the stack
+    steps:
+      - command: terraform destroy alb-routing --stack prod -auto-approve
+
+  plan-all-ecs:
+    description: |
+      Run 'terraform plan' on all ecs components in the stack
+    steps:
+      - command: terraform plan ecs-service --stack prod
+      - command: terraform plan cloudfront --stack prod
+      - command: terraform plan s3-frontend-policy --stack prod
+      - command: terraform plan route53-records --stack prod
+
+  apply-all-ecs:
+    description: |
+      Run 'terraform apply' on all ecs components in the stack
+    steps:
+      - command: terraform apply ecs-service --stack prod -auto-approve
+      - command: terraform apply cloudfront --stack prod -auto-approve
+      - command: terraform apply s3-frontend-policy --stack prod -auto-approve
+      - command: terraform apply route53-records --stack prod -auto-approve
+
+  destroy-all-ecs:
+    description: |
+      Run 'terraform destroy' on all ecs components in the stack
+    steps:
+      - command: terraform destroy route53-records --stack prod -auto-approve
+      - command: terraform destroy s3-frontend-policy --stack prod -auto-approve
+      - command: terraform destroy cloudfront --stack prod -auto-approve
+      - command: terraform destroy ecs-service --stack prod -auto-approve
+
+  plan-ecs-only:
+    description: |
+      Run 'terraform plan' on only the ecs component in the stack
+    steps:
+      - command: terraform plan ecs-service --stack prod
+
+  apply-ecs-only:
+    description: |
+      Run 'terraform apply' on only the ecs component in the stack
+    steps:
+      - command: terraform apply ecs-service --stack prod -auto-approve
+
+  build-backend-image:
+    description: |
+      Build the backend Docker image with BuildKit and push to ECR
+    steps:
+      - name: build-and-push-backend
+        type: shell
+        command: |
+          set -euo pipefail
+          AWS_REGION="${AWS_REGION:-eu-central-1}"
+          ECR_REPO_NAME="${ECR_REPO_NAME:-fristajl-backend}"
+          BACKEND_DIR="${BACKEND_DIR:-../backend}"
+
+          if [ -z "${IMAGE_TAG:-}" ]; then
+            if git -C "$BACKEND_DIR" rev-parse --short HEAD >/dev/null 2>&1; then
+              IMAGE_TAG="$(git -C "$BACKEND_DIR" rev-parse --short HEAD)"
+            else
+              IMAGE_TAG="latest"
+            fi
+          fi
+
+          if [ -z "${AWS_ACCOUNT_ID:-}" ]; then
+            AWS_ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
+          fi
+
+          REPO_URI="${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPO_NAME}"
+
+          aws ecr get-login-password --region "$AWS_REGION" | docker login --username AWS --password-stdin "$REPO_URI"
+
+          docker buildx create --name fristajl-backend --use >/dev/null 2>&1 || docker buildx use fristajl-backend
+
+          cd "$BACKEND_DIR"
+          docker buildx build --platform linux/amd64 -t "${REPO_URI}:${IMAGE_TAG}" --push .

@@ -1,0 +1,19 @@
+# Global defaults for all stacks
+terraform:
+  vars:
+    namespace: fristajl
+    delimiter: "-"
+    label_order:
+      - namespace
+      - tenant
+      - stage
+      - name
+  backend_type: s3
+  backend:
+    s3:
+      acl: "bucket-owner-full-control"
+      encrypt: true
+      bucket: "fristajl-pl-prod-tfstate"
+      key: "terraform.tfstate"
+      region: "eu-central-1"
+      use_lockfile: true

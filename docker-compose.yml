@@ -1,0 +1,148 @@
+services:
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend/react-app:/app
+      - frontend_node_modules:/app/node_modules
+    environment:
+      # Backend WebSocket URL (matchmaking)
+      - VITE_BACKEND_WS_URL=ws://localhost:7070
+      # Freestyle Arena URL (Javalin backend UI)
+      - VITE_ARENA_URL=http://localhost:7070
+      # LocalStack S3 endpoint accessible from the browser
+      - VITE_S3_ENDPOINT=http://localhost:4566
+      # Google Analytics 4 Measurement ID (e.g. G-XXXXXXXXXX), left empty locally
+      - VITE_GA_MEASUREMENT_ID=${VITE_GA_MEASUREMENT_ID:-}
+    command: npm run dev -- --host 0.0.0.0 --port 5173
+    depends_on:
+      - backend
+      - localstack
+
+  backend:
+    build: ./backend
+    ports:
+      - "7070:7070"
+    volumes:
+      - ./backend:/app
+      - backend_maven_cache:/root/.m2
+    environment:
+      # Must match the "7070:7070" port mapping above — OmeglinMain.kt defaults to 4000 otherwise.
+      - PORT=7070
+      # Force HTTP in Docker — keystore.jks is not present at this path
+      - JAVA_TOOL_OPTIONS=-Dkeystore.path=/nonexistent
+      # S3 endpoint for reading topics.txt (container-to-container)
+      - S3_ENDPOINT=http://localstack:4566
+      # Admin panel auth
+      - JWT_SECRET=${JWT_SECRET:-change-this-secret-in-production}
+      # PostgreSQL — DML only; schema + admin account are seeded by db-migrate/db-seed below
+      - DB_URL=jdbc:postgresql://db:5432/fristajl
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      # OpenRouter API key for AI topic generation — get a free key at https://openrouter.ai/keys
+      # Set it in your shell: export OPENROUTER_API_KEY=sk-or-v1-...
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:?OPENROUTER_API_KEY must be set — get a free key at https://openrouter.ai/keys}
+    depends_on:
+      localstack:
+        condition: service_started
+      db-seed:
+        condition: service_completed_successfully
+
+  # One-off: applies Flyway schema migrations, then exits. Mirrors the
+  # db-migrator ECS task used in prod (see backend/migrate.sh).
+  db-migrate:
+    build: ./backend
+    volumes:
+      - ./backend:/app
+      - backend_maven_cache:/root/.m2
+    command: ["./migrate.sh"]
+    environment:
+      - RDS_HOST=db
+      - RDS_PORT=5432
+      - DB_NAME=fristajl
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_SSL=false
+      - DB_IAM_AUTH=false
+    depends_on:
+      db:
+        condition: service_healthy
+
+  # One-off: creates/updates the admin dashboard account, then exits. Mirrors
+  # the db-seed ECS task used in prod (see backend/seed.sh).
+  db-seed:
+    build: ./backend
+    volumes:
+      - ./backend:/app
+      - backend_maven_cache:/root/.m2
+    command: ["./seed.sh"]
+    environment:
+      - RDS_HOST=db
+      - RDS_PORT=5432
+      - DB_NAME=fristajl
+      - DB_USER=postgres
+      - DB_PASSWORD=postgres
+      - DB_SSL=false
+      - DB_IAM_AUTH=false
+      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
+      - ADMIN_PASSWORD=${ADMIN_PASSWORD:?ADMIN_PASSWORD must be set}
+    depends_on:
+      db-migrate:
+        condition: service_completed_successfully
+
+  db:
+    image: postgres:16.11-alpine
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=fristajl
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d fristajl"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  localstack:
+    image: localstack/localstack:4.14 # Zmiany w obrazie LocalStack (od 23 marca 2026): Najnowsze obrazy localstack/localstack:latest wymagają teraz uwierzytelnienia za pomocą tokena LOCALSTACK_AUTH_TOKEN
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=s3
+      - DEBUG=1
+      - AWS_DEFAULT_REGION=eu-central-1
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    volumes:
+      - "${LOCALSTACK_VOLUME_DIR:-./localstack-data}:/var/lib/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"
+      - "./localstack-init:/etc/localstack/init/ready.d"
+
+  # Fetches trending TikToks daily (04:00 UTC) from TikTok hashtags.
+  # Requires TIKTOK_MS_TOKEN — see scripts/fetch-tiktoks/fetch.py for instructions.
+  # If not set, the service starts but skips fetching (manual admin URLs still work).
+  # To push to real AWS S3 instead of LocalStack, export S3_ENDPOINT= (empty) and real
+  # AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY before running docker compose.
+  tiktok-cron:
+    build: ./scripts/fetch-tiktoks
+    environment:
+      - S3_ENDPOINT=${S3_ENDPOINT-http://localstack:4566}
+      - AWS_DEFAULT_REGION=eu-central-1
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID:-test}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY:-test}
+      - TIKTOK_HASHTAGS=${TIKTOK_HASHTAGS:-freestyle,freestylerap,fristajl,polskirap}
+      - TIKTOK_MS_TOKEN=${TIKTOK_MS_TOKEN:-}
+      - TIKTOK_VIDEOS_PER_TAG=${TIKTOK_VIDEOS_PER_TAG:-30}
+      - TIKTOK_FYP_SCROLLS=${TIKTOK_FYP_SCROLLS:-120}
+    depends_on:
+      localstack:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  frontend_node_modules:
+  backend_maven_cache:
+  postgres_data:

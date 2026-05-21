@@ -1,0 +1,339 @@
+# yaml-language-server: $schema=https://atmos.tools/schemas/atmos/atmos-manifest/1.0/atmos-manifest.json
+#
+# aws-alb moved to terraform-shared-infrastructure (one shared physical ALB
+# routes to every project). fristajl now owns only its own slice of routing
+# on that shared ALB - see the `alb-routing` component below, which attaches
+# fristajl's own ACM certificate (SNI) + a host-based listener rule + its
+# own target group to the shared listener (read via shared-infra-remote-state).
+#
+# ECS cluster creation also moved to terraform-shared-infrastructure (one
+# shared cluster used by every project) - see the `ecs-service` component
+# below, which creates only fristajl's own service into that shared cluster
+# (read via shared-infra-remote-state's `ecs_cluster_arn`).
+
+components:
+  terraform:
+    alb-routing:
+      metadata:
+        component: fristajl-pl-alb-routing
+      vars:
+        vpc_id: !terraform.state shared-infra-remote-state .vpc_id
+        alb_https_listener_arn: !terraform.state shared-infra-remote-state .alb_https_listener_arn
+        certificate_arn: !terraform.state aws-acm .acm_certificate_arn
+        # Must be unique across every project sharing the ALB (events-app
+        # uses a different value - see its own alb-routing catalog entry).
+        listener_rule_priority: 20
+        host_headers: ["fristajl.pl", "*.fristajl.pl"]
+        target_group_name: "fristajl-web-app"
+        target_group_port: 4000
+        target_group_health_check: {
+          enabled: true,
+          path: "/health",
+          port: "4000",
+          protocol: "HTTP",
+          healthy_threshold: 2,
+          unhealthy_threshold: 3,
+          timeout: 10,
+          interval: 30,
+          matcher: "200,301,302"
+        }
+    ecs-service:
+      metadata:
+        component: aws-ecs-service
+      vars:
+        # Cluster now lives in terraform-shared-infrastructure (one shared
+        # cluster used by every project) - this component only creates
+        # fristajl's own service into it.
+        cluster_arn: !terraform.state shared-infra-remote-state .ecs_cluster_arn
+        name: "fristajl-backend"
+        cpu: 256
+        memory: 1024
+        health_check_grace_period_seconds: 300
+        # Memory target-tracking policy assumed memory scales inversely with task
+        # count, but our JVM baseline memory usage doesn't drop when scaling in -
+        # it kept the service pinned at 2 tasks. Scale on CPU only.
+        autoscaling_policies:
+          cpu:
+            policy_type: "TargetTrackingScaling"
+            target_tracking_scaling_policy_configuration:
+              predefined_metric_specification:
+                predefined_metric_type: "ECSServiceAverageCPUUtilization"
+
+        container_definitions:
+          app-backend:
+            cpu: 256
+            memory: 1024
+            essential: true
+            image: !env IMAGE_URI "811046139456.dkr.ecr.eu-central-1.amazonaws.com/fristajl-backend:latest"
+            portMappings:
+              - name: "fristajl-backend"
+                containerPort: 4000
+                protocol: "tcp"
+
+            readonlyRootFilesystem: false
+            enable_cloudwatch_logging: true
+            environment:
+              # Must match containerPort/target_group_port/health check port above.
+              - name: PORT
+                value: "4000"
+              - name: RDS_HOST
+                value: !terraform.state shared-infra-remote-state .db_instance_address
+              - name: RDS_PORT
+                value: !terraform.state shared-infra-remote-state .db_instance_port
+              - name: DB_NAME
+                value: "fristajl"
+              - name: DB_USER
+                value: "application_user_fristajl"
+              - name: DB_SSL
+                value: "true"
+              - name: DB_IAM_AUTH
+                value: "true"
+              - name: AWS_REGION
+                value: "eu-central-1"
+              - name: ADMIN_USERNAME
+                value: "admin"
+              - name: NODE_ENV
+                value: "production"
+              - name: CORS_ORIGINS
+                value: "https://fristajl.pl"
+            secrets:
+              - name: JWT_SECRET
+                valueFrom: !terraform.state jwt-secret .parameter_arn
+              - name: ADMIN_PASSWORD
+                valueFrom: !terraform.state portal-admin-password .parameter_arn
+              - name: OPENROUTER_API_KEY
+                valueFrom: !terraform.state openrouter-api-key .parameter_arn
+            logConfiguration:
+              logDriver: "awslogs"
+              options:
+                awslogs-group: "/aws/ecs/services/fristajl"
+                awslogs-stream-prefix: "fristajl-backend"
+                awslogs-region: "eu-central-1"
+                awslogs-create-group: "true"
+            memoryReservation: 768
+            create_cloudwatch_log_group: true
+            cloudwatch_log_group_name: "/aws/ecs/services/fristajl"
+            cloudwatch_log_group_class: STANDARD
+            cloudwatch_log_group_retention_in_days: 7
+
+        load_balancer:
+          service:
+            target_group_arn: !terraform.state alb-routing .target_group_arn
+            container_name: "app-backend"
+            container_port: 4000
+
+        vpc_id: !terraform.state shared-infra-remote-state .vpc_id
+        subnet_ids: !terraform.state shared-infra-remote-state .public_subnets
+        security_group_ids: [ !terraform.state security-groups .web_app_security_group_id ]
+        create_security_group: false
+        assign_public_ip: true
+        enable_execute_command: true
+        create_task_exec_iam_role: true
+        create_task_exec_policy: true
+        task_exec_iam_statements:
+          - actions:
+              - "ecr:GetAuthorizationToken"
+              - "ecr:BatchCheckLayerAvailability"
+              - "ecr:GetDownloadUrlForLayer"
+              - "ecr:BatchGetImage"
+            effect: "Allow"
+            resources:
+              - "*"
+          - actions:
+              - "logs:CreateLogGroup"
+              - "logs:CreateLogStream"
+              - "logs:PutLogEvents"
+            effect: "Allow"
+            resources:
+              - "arn:aws:logs:*:*:*"
+          - actions:
+              - "ssm:GetParameter"
+              - "ssm:GetParameters"
+              - "ssm:GetParametersByPath"
+            effect: "Allow"
+            resources:
+              - "arn:aws:ssm:eu-central-1:811046139456:parameter/*"
+
+        create_tasks_iam_role: true
+        tasks_iam_role_statements:
+          - actions:
+              - "logs:CreateLogStream"
+              - "logs:PutLogEvents"
+            effect: "Allow"
+            resources:
+              - "arn:aws:logs:*:*:*"
+          - actions:
+              - "s3:ListBucket"
+            effect: "Allow"
+            resources:
+              - "arn:aws:s3:::fristajl-prod-pictures"
+              - "arn:aws:s3:::fristajl-prod-beats"
+              - "arn:aws:s3:::fristajl-prod-sounds"
+              - "arn:aws:s3:::fristajl-prod-pictures-propositions"
+              - "arn:aws:s3:::fristajl-prod-beats-propositions"
+              - "arn:aws:s3:::fristajl-prod-sounds-propositions"
+              - "arn:aws:s3:::fristajl-prod-topics-propositions"
+              - "arn:aws:s3:::fristajl-prod-tiktoks"
+              - "arn:aws:s3:::fristajl-prod-tiktoks-propositions"
+          - actions:
+              - "s3:GetObject"
+              - "s3:PutObject"
+              - "s3:DeleteObject"
+            effect: "Allow"
+            resources:
+              - "arn:aws:s3:::fristajl-prod-pictures/*"
+              - "arn:aws:s3:::fristajl-prod-beats/*"
+              - "arn:aws:s3:::fristajl-prod-sounds/*"
+              - "arn:aws:s3:::fristajl-prod-pictures-propositions/*"
+              - "arn:aws:s3:::fristajl-prod-beats-propositions/*"
+              - "arn:aws:s3:::fristajl-prod-sounds-propositions/*"
+              - "arn:aws:s3:::fristajl-prod-topics-propositions/*"
+              - "arn:aws:s3:::fristajl-prod-tiktoks/*"
+              - "arn:aws:s3:::fristajl-prod-tiktoks-propositions/*"
+          - actions:
+              - "ssm:GetParameter"
+              - "ssm:GetParameters"
+              - "ssm:GetParametersByPath"
+            effect: "Allow"
+            resources:
+              - "*"
+          - actions:
+              - "kms:Decrypt"
+            effect: "Allow"
+            resources:
+              - "*"
+          - actions:
+              - "rds-db:connect"
+            effect: "Allow"
+            resources:
+              - !terraform.state shared-infra-remote-state .rds_db_connect_arn_application_user_fristajl
+    cloudfront:
+      metadata:
+        component: aws-cloudfront
+      vars:
+        enabled: true
+        comment: "fristajl CloudFront"
+        default_root_object: "index.html"
+        aliases:
+          - "fristajl.pl"
+        default_cache_behavior:
+          allowed_methods: ["GET", "HEAD", "OPTIONS"]
+          cached_methods: ["GET", "HEAD"]
+          target_origin_id: "s3-frontend"
+          viewer_protocol_policy: "redirect-to-https"
+          compress: true
+          min_ttl: 0
+          default_ttl: 0
+          max_ttl: 0
+          forwarded_values:
+            query_string: false
+            cookies:
+              forward: "none"
+        ordered_cache_behavior:
+          - path_pattern: "/health"
+            allowed_methods: ["GET", "HEAD", "OPTIONS"]
+            cached_methods: ["GET", "HEAD"]
+            target_origin_id: "alb"
+            viewer_protocol_policy: "redirect-to-https"
+            compress: true
+            min_ttl: 0
+            default_ttl: 0
+            max_ttl: 0
+            forwarded_values:
+              query_string: false
+              cookies:
+                forward: "none"
+          # All backend routes live under /api/* (see
+          # backend/src/main/kotlin/io/javalin/omeglin/OmeglinMain.kt).
+          - path_pattern: "/api/*"
+            allowed_methods: ["GET", "HEAD", "OPTIONS", "PUT", "POST", "PATCH", "DELETE"]
+            cached_methods: ["GET", "HEAD"]
+            target_origin_id: "alb"
+            viewer_protocol_policy: "redirect-to-https"
+            compress: true
+            min_ttl: 0
+            default_ttl: 0
+            max_ttl: 0
+            forwarded_values:
+              headers: ["Authorization"]
+              query_string: true
+              cookies:
+                forward: "none"
+        origin:
+          alb:
+            # Must match a SAN on the ALB's ACM certificate (fristajl.pl /
+            # *.fristajl.pl). Using the ALB's raw AWS DNS name here causes
+            # CloudFront's TLS hostname validation to fail against the origin.
+            domain_name: "api.fristajl.pl"
+            custom_origin_config:
+              http_port: 80
+              https_port: 443
+              origin_protocol_policy: "https-only"
+              origin_ssl_protocols: ["TLSv1.2"]
+          s3-frontend:
+            domain_name: !terraform.state s3-frontend .s3_bucket_bucket_domain_name
+            origin_access_control_key: "s3"
+        logging_config:
+          bucket: !terraform.state access-logs .s3_bucket_bucket_domain_name
+          prefix: "fristajl-cloudfront-access-logs"
+        price_class: "PriceClass_100"
+        viewer_certificate:
+          acm_certificate_arn: !terraform.state aws-acm-cloudfront .acm_certificate_arn
+          ssl_support_method: "sni-only"
+          minimum_protocol_version: "TLSv1.2_2021"
+        origin_access_control:
+          s3:
+            # OAC names are unique account-wide; events-app already owns "s3".
+            name: "fristajl-pl-s3"
+            description: "CloudFront access to S3"
+            origin_type: "s3"
+            signing_behavior: "always"
+            signing_protocol: "sigv4"
+        # SPA client-side routes (e.g. /admin/login) have no matching S3 object -
+        # the OAC-scoped bucket policy denies s3:ListBucket, so a missing key
+        # surfaces as 403 (not 404). Rewrite both to index.html so React Router
+        # can handle the route.
+        custom_error_response:
+          - error_code: 403
+            response_code: 200
+            response_page_path: "/index.html"
+            error_caching_min_ttl: 10
+          - error_code: 404
+            response_code: 200
+            response_page_path: "/index.html"
+            error_caching_min_ttl: 10
+    s3-frontend-policy:
+      metadata:
+        component: fristajl-pl-s3-bucket-policy
+      vars:
+        bucket_id: !terraform.state s3-frontend .s3_bucket_id
+        cloudfront_distribution_arn: !terraform.state cloudfront .cloudfront_distribution_arn
+    route53-records:
+      metadata:
+        component: route53
+      vars:
+        create_zone: false
+        name: "fristajl.pl"
+        private_zone: false
+        records:
+          fristajl.pl:
+            full_name: "fristajl.pl"
+            type: "A"
+            alias:
+              name: !terraform.state cloudfront .cloudfront_distribution_domain_name
+              zone_id: !terraform.state cloudfront .cloudfront_distribution_hosted_zone_id
+              evaluate_target_health: false
+          api.fristajl.pl:
+            full_name: "api.fristajl.pl"
+            type: "A"
+            alias:
+              name: !terraform.state shared-infra-remote-state .alb_dns_name
+              zone_id: !terraform.state shared-infra-remote-state .alb_zone_id
+              evaluate_target_health: true
+          arena.fristajl.pl:
+            full_name: "arena.fristajl.pl"
+            type: "A"
+            alias:
+              name: !terraform.state shared-infra-remote-state .alb_dns_name
+              zone_id: !terraform.state shared-infra-remote-state .alb_zone_id
+              evaluate_target_health: true

@@ -1,0 +1,30 @@
+name: Security
+description: Atmos workflows for managing security components.
+
+workflows:
+  plan-all-security:
+    description: |
+      Run 'terraform plan' on all security components in the stack
+    steps:
+      - command: terraform plan access-logs --stack prod
+      - command: terraform plan security-groups --stack prod
+      - command: terraform plan aws-acm --stack prod
+      - command: terraform plan aws-acm-cloudfront --stack prod
+
+  apply-all-security:
+    description: |
+      Run 'terraform apply' on all security components in the stack
+    steps:
+      - command: terraform apply access-logs --stack prod -auto-approve
+      - command: terraform apply security-groups --stack prod -auto-approve
+      - command: terraform apply aws-acm --stack prod -auto-approve
+      - command: terraform apply aws-acm-cloudfront --stack prod -auto-approve
+
+  destroy-all-security:
+    description: |
+      Run 'terraform destroy' on all security components in the stack
+    steps:
+      - command: terraform destroy aws-acm-cloudfront --stack prod -auto-approve
+      - command: terraform destroy aws-acm --stack prod -auto-approve
+      - command: terraform destroy security-groups --stack prod -auto-approve
+      - command: terraform destroy access-logs --stack prod -auto-approve

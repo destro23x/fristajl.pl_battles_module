@@ -1,0 +1,72 @@
+name: Storage
+description: Atmos workflows for managing storage components.
+
+workflows:
+  plan-all-storage:
+    description: |
+      Run 'terraform plan' on all storage components in the stack
+    steps:
+      - command: terraform plan aws-ecr --stack prod
+      - command: terraform plan portal-admin-password --stack prod
+      - command: terraform plan jwt-secret --stack prod
+      - command: terraform plan openrouter-api-key --stack prod
+      - command: terraform plan s3-pictures --stack prod
+      - command: terraform plan s3-beats --stack prod
+      - command: terraform plan s3-sounds --stack prod
+      - command: terraform plan s3-topics --stack prod
+      - command: terraform plan s3-pictures-propositions --stack prod
+      - command: terraform plan s3-beats-propositions --stack prod
+      - command: terraform plan s3-sounds-propositions --stack prod
+      - command: terraform plan s3-topics-propositions --stack prod
+      - command: terraform plan s3-tiktoks --stack prod
+      - command: terraform plan s3-questions --stack prod
+      - command: terraform plan s3-frontend --stack prod
+      - command: terraform plan db-provisioner-lambda --stack prod
+      - command: terraform plan db-migrator-task --stack prod
+      - command: terraform plan db-seed-task --stack prod
+
+  apply-all-storage:
+    description: |
+      Run 'terraform apply' on all storage components in the stack
+    steps:
+      - command: terraform apply aws-ecr --stack prod -auto-approve
+      - command: terraform apply portal-admin-password --stack prod -auto-approve
+      - command: terraform apply jwt-secret --stack prod -auto-approve
+      - command: terraform apply openrouter-api-key --stack prod -auto-approve
+      - command: terraform apply s3-pictures --stack prod -auto-approve
+      - command: terraform apply s3-beats --stack prod -auto-approve
+      - command: terraform apply s3-sounds --stack prod -auto-approve
+      - command: terraform apply s3-topics --stack prod -auto-approve
+      - command: terraform apply s3-pictures-propositions --stack prod -auto-approve
+      - command: terraform apply s3-beats-propositions --stack prod -auto-approve
+      - command: terraform apply s3-sounds-propositions --stack prod -auto-approve
+      - command: terraform apply s3-topics-propositions --stack prod -auto-approve
+      - command: terraform apply s3-tiktoks --stack prod -auto-approve
+      - command: terraform apply s3-questions --stack prod -auto-approve
+      - command: terraform apply s3-frontend --stack prod -auto-approve
+      - command: terraform apply db-provisioner-lambda --stack prod -auto-approve
+      - command: terraform apply db-migrator-task --stack prod -auto-approve
+      - command: terraform apply db-seed-task --stack prod -auto-approve
+
+  destroy-all-storage:
+    description: |
+      Run 'terraform destroy' on all storage components in the stack
+    steps:
+      - command: terraform destroy db-seed-task --stack prod -auto-approve
+      - command: terraform destroy db-migrator-task --stack prod -auto-approve
+      - command: terraform destroy db-provisioner-lambda --stack prod -auto-approve
+      - command: terraform destroy s3-frontend --stack prod -auto-approve
+      - command: terraform destroy s3-questions --stack prod -auto-approve
+      - command: terraform destroy s3-tiktoks --stack prod -auto-approve
+      - command: terraform destroy s3-topics-propositions --stack prod -auto-approve
+      - command: terraform destroy s3-sounds-propositions --stack prod -auto-approve
+      - command: terraform destroy s3-beats-propositions --stack prod -auto-approve
+      - command: terraform destroy s3-pictures-propositions --stack prod -auto-approve
+      - command: terraform destroy s3-topics --stack prod -auto-approve
+      - command: terraform destroy s3-sounds --stack prod -auto-approve
+      - command: terraform destroy s3-beats --stack prod -auto-approve
+      - command: terraform destroy s3-pictures --stack prod -auto-approve
+      - command: terraform destroy openrouter-api-key --stack prod -auto-approve
+      - command: terraform destroy jwt-secret --stack prod -auto-approve
+      - command: terraform destroy portal-admin-password --stack prod -auto-approve
+      - command: terraform destroy aws-ecr --stack prod -auto-approve

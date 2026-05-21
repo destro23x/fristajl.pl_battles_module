@@ -1,0 +1,44 @@
+name: Deploy Content
+
+on:
+  # push:
+  #   branches: [main]
+  #   paths:
+  #     - "content/topics/**"
+  #     - ".github/workflows/content.yml"
+  workflow_dispatch:
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+  OIDC_AWS_ROLE_TERRAFORM: ${{ secrets.OIDC_AWS_ROLE_TERRAFORM }}
+  TOPICS_S3_BUCKET: fristajl-prod-topics
+
+concurrency:
+  group: content-deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy-topics:
+    name: Upload topics.txt to S3
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    environment: prod
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/${{ env.OIDC_AWS_ROLE_TERRAFORM }}
+          role-session-name: GitHubActionsContent
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Upload topics.txt
+        run: |
+          aws s3 cp content/topics/topics.txt s3://${{ env.TOPICS_S3_BUCKET }}/topics.txt --sse AES256

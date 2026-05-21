@@ -1,0 +1,12 @@
+{
+  "name": "db-user-provisioner",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "index.mjs",
+  "description": "Lambda function that creates the fristajl database and provisions its IAM-authenticated roles on the shared events-app RDS instance",
+  "dependencies": {
+    "pg": "^8.13.1",
+    "pg-format": "^1.0.4"
+  }
+}

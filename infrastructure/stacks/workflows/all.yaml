@@ -1,0 +1,61 @@
+name: All
+description: Atmos workflow to run all workflows.
+
+workflows:
+  run-plan-all:
+    description: "Run all workflows"
+    steps:
+      - name: plan-core
+        command: workflow plan-all-core -f core.yaml
+      - name: plan-networking
+        command: workflow plan-all-networking -f networking.yaml
+      - name: plan-security
+        command: workflow plan-all-security -f security.yaml
+      - name: plan-storage
+        command: workflow plan-all-storage -f storage.yaml
+      - name: plan-alb
+        command: workflow plan-all-alb -f app.yaml
+      - name: plan-ecs
+        command: workflow plan-all-ecs -f app.yaml
+
+  run-apply-all:
+    description: "Run all workflows"
+    steps:
+      - name: apply-core
+        command: workflow apply-all-core -f core.yaml
+      - name: apply-networking
+        command: workflow apply-all-networking -f networking.yaml
+      - name: apply-security
+        command: workflow apply-all-security -f security.yaml
+      - name: apply-storage
+        command: workflow apply-all-storage -f storage.yaml
+      - name: apply-alb
+        command: workflow apply-all-alb -f app.yaml
+      - name: apply-ecs
+        command: workflow apply-all-ecs -f app.yaml
+
+  run-destroy-all:
+    description: "Run all workflows"
+    steps:
+      - name: destroy-ecs
+        command: workflow destroy-all-ecs -f app.yaml
+      - name: destroy-alb
+        command: workflow destroy-all-alb -f app.yaml
+      - name: destroy-storage
+        command: workflow destroy-all-storage -f storage.yaml
+      - name: destroy-security
+        command: workflow destroy-all-security -f security.yaml
+      - name: destroy-networking
+        command: workflow destroy-all-networking -f networking.yaml
+      - name: destroy-core
+        command: workflow destroy-all-core -f core.yaml
+
+  run-destroy-spend-heavy-components:
+    description: "Run destroy on spend heavy components"
+    steps:
+      - name: destroy-ecs
+        command: workflow destroy-all-ecs -f app.yaml
+      - name: destroy-alb
+        command: workflow destroy-all-alb -f app.yaml
+      - name: destroy-storage
+        command: workflow destroy-all-storage -f storage.yaml

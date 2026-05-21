@@ -1,0 +1,22 @@
+import:
+  - _defaults
+  - mixins/common-tags
+  - catalog/core
+  - catalog/networking
+  - catalog/security
+  - catalog/storage
+  - catalog/app
+  - catalog/db-provisioner
+  - catalog/db-migrator
+  - catalog/db-seed
+
+vars: # Stack-specific variables
+  tenant: pl
+  stage: prod
+  region: eu-central-1
+
+components:
+  terraform:
+    tfstate-backend:
+      vars:
+        name: tfstate

@@ -1,0 +1,104 @@
+name: Build and Deploy Frontend
+
+on:
+  # push:
+  #   branches: [main]
+  #   paths:
+  #     - "frontend/react-app/**"
+  #     - ".github/workflows/frontend.yml"
+  # pull_request:
+  #   branches: [main]
+  #   paths:
+  #     - "frontend/react-app/**"
+  #     - ".github/workflows/frontend.yml"
+  workflow_dispatch:
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+  OIDC_AWS_ROLE_TERRAFORM: ${{ secrets.OIDC_AWS_ROLE_TERRAFORM }}
+  S3_BUCKET: fristajl.pl
+  CLOUDFRONT_DISTRIBUTION_ID: ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }}
+
+concurrency:
+  group: frontend-deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-and-test:
+    name: Lint, test, build
+    runs-on: ubuntu-latest
+    environment: prod
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/react-app/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend/react-app
+        run: npm ci
+
+      - name: ESLint
+        working-directory: frontend/react-app
+        run: npm run lint
+
+      - name: Run tests
+        working-directory: frontend/react-app
+        run: npm test
+
+      - name: Build
+        working-directory: frontend/react-app
+        run: npm run build
+        env:
+          VITE_ARENA_URL: ${{ vars.VITE_ARENA_URL || 'https://arena.fristajl.pl' }}
+          VITE_S3_ENDPOINT: ${{ vars.VITE_S3_ENDPOINT }}
+          VITE_GA_MEASUREMENT_ID: ${{ vars.VITE_GA_MEASUREMENT_ID }}
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/react-app/dist/
+          retention-days: 1
+
+  deploy:
+    name: Deploy to S3 + CloudFront
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    environment: prod
+
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-dist
+          path: dist
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/${{ env.OIDC_AWS_ROLE_TERRAFORM }}
+          role-session-name: GitHubActionsFrontend
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Sync to S3
+        run: |
+          aws s3 sync dist/ s3://${{ env.S3_BUCKET }}/ --delete --sse AES256
+
+      - name: Invalidate CloudFront cache
+        if: env.CLOUDFRONT_DISTRIBUTION_ID != ''
+        run: |
+          aws cloudfront create-invalidation \
+            --distribution-id ${{ env.CLOUDFRONT_DISTRIBUTION_ID }} \
+            --paths "/*"

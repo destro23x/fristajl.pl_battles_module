@@ -1,0 +1,27 @@
+# yaml-language-server: $schema=https://atmos.tools/schemas/atmos/atmos-manifest/1.0/atmos-manifest.json
+
+components:
+  terraform:
+    db-provisioner-lambda:
+      metadata:
+        component: fristajl-pl-db-provisioner-lambda
+      vars:
+        function_name: fristajl-db-user-provisioner
+        role_name: fristajl-db-user-provisioner-role
+        subnet_ids: !terraform.state shared-infra-remote-state .private_subnets
+        security_group_ids: [!terraform.state security-groups .lambda_security_group_id]
+        timeout: 30
+        memory_size: 128
+
+        # Shared RDS instance (terraform-shared-infrastructure) - fristajl
+        # gets its own database and IAM-authenticated roles on it (see
+        # lambda/db-user-provisioner).
+        rds_instance_identifier: !terraform.state shared-infra-remote-state .rds_instance_identifier
+        rds_instance_arn: !terraform.state shared-infra-remote-state .db_instance_arn
+
+        database_name: "fristajl"
+        application_role_name: "application_user_fristajl"
+        migration_role_name: "migration_user_fristajl"
+
+        admin_password_parameter_name: !terraform.state shared-infra-remote-state .admin_password_parameter_name
+        admin_password_parameter_arn: !terraform.state shared-infra-remote-state .admin_password_parameter_arn
