@@ -1,0 +1,72 @@
+# yaml-language-server: $schema=https://atmos.tools/schemas/atmos/atmos-manifest/1.0/atmos-manifest.json
+
+components:
+  terraform:
+    security-groups:
+      metadata:
+        component: fristajl-pl-security-groups
+      vars:
+        vpc_id: !terraform.state shared-infra-remote-state .vpc_id
+        alb_security_group_id: !terraform.state shared-infra-remote-state .alb_security_group_id
+        postgresql_security_group_id: !terraform.state shared-infra-remote-state .postgresql_security_group_id
+        postgresql_port: 7059
+
+        sg_web_app_name: fristajl-web-app-sg
+        sg_web_app_description: "Security group for fristajl web app, only allow ALB and shared PostgreSQL"
+        sg_web_app_port: 4000
+        sg_web_app_egress_rules: ["https-443-tcp"]
+
+        sg_lambda_name: fristajl-db-provisioner-lambda-sg
+        sg_lambda_description: "Security group for the fristajl db provisioner Lambda, only allows egress to shared PostgreSQL"
+
+        sg_migrator_name: fristajl-db-migrator-sg
+        sg_migrator_description: "Security group for the fristajl db migrator/seed ECS tasks, only allows egress to shared PostgreSQL and HTTPS"
+    access-logs:
+      metadata:
+        component: aws-s3-bucket
+      vars:
+        bucket: "fristajl-access-logs"
+        acl: "log-delivery-write"
+        force_destroy: true
+        control_object_ownership: true
+        object_ownership: "ObjectWriter"
+        attach_access_log_delivery_policy: true
+        attach_cloudtrail_log_delivery_policy: true
+        # ALB/WAF logs now go to terraform-shared-infrastructure's shared
+        # access-logs bucket instead - this bucket stays for S3/CloudFront logs.
+        attach_elb_log_delivery_policy: false
+        attach_lb_log_delivery_policy: false
+        attach_waf_log_delivery_policy: false
+        attach_deny_insecure_transport_policy: true
+        attach_require_latest_tls_policy: true
+        lifecycle_rule:
+          - id: "access-logs-retention"
+            enabled: true
+            expiration:
+              days: 90
+    aws-acm:
+      metadata:
+        component: aws-acm
+      vars:
+        domain_name: "fristajl.pl"
+        zone_id: !terraform.state route53 .id
+        validation_method: "DNS"
+        subject_alternative_names: [
+          "*.fristajl.pl"
+        ]
+        wait_for_validation: true
+    aws-acm-cloudfront:
+      metadata:
+        component: aws-acm
+      providers:
+        aws:
+          region: "us-east-1"
+      vars:
+        region: "us-east-1"
+        domain_name: "fristajl.pl"
+        zone_id: !terraform.state route53 .id
+        validation_method: "DNS"
+        subject_alternative_names: [
+          "*.fristajl.pl"
+        ]
+        wait_for_validation: true

@@ -1,0 +1,19 @@
+{
+  "name": "fristajl-dev-tools",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Interactive scripts to trigger fristajl.pl deployments (backend/frontend/content/infrastructure) without pushing to main",
+  "type": "module",
+  "scripts": {
+    "start": "./index.mts"
+  },
+  "dependencies": {
+    "@clack/prompts": "^1.2.0",
+    "zx": "^8.5.4"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.4",
+    "typescript": "^5.7.0"
+  }
+}

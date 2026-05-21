@@ -1,0 +1,26 @@
+# yaml-language-server: $schema=https://atmos.tools/schemas/atmos/atmos-manifest/1.0/atmos-manifest.json
+
+components:
+  terraform:
+    db-migrator-task:
+      metadata:
+        component: fristajl-pl-db-migrator-task
+      vars:
+        family: fristajl-db-migrator
+        execution_role_name: fristajl-db-migrator-execution-role
+        cpu: 256
+        memory: 512
+        region: eu-central-1
+        # Placeholder only - the migrate workflow always registers a new
+        # task definition revision with the current backend image tag before
+        # running the task.
+        image: "811046139456.dkr.ecr.eu-central-1.amazonaws.com/fristajl-backend:latest"
+
+        db_host: !terraform.state shared-infra-remote-state .db_instance_address
+        db_port: !terraform.state shared-infra-remote-state .db_instance_port
+        db_name: "fristajl"
+        db_user: "migration_user_fristajl"
+        rds_db_connect_arn: !terraform.state shared-infra-remote-state .rds_db_connect_arn_migration_user_fristajl
+
+        subnet_ids: !terraform.state shared-infra-remote-state .public_subnets
+        security_group_id: !terraform.state security-groups .migrator_security_group_id

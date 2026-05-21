@@ -1,0 +1,26 @@
+name: Core Account
+description: Atmos workflows for managing core components.
+
+workflows:
+  plan-all-core:
+    description: |
+      Run 'terraform plan' on all core components in the stack
+    steps:
+      - command: terraform plan tfstate-backend --stack prod
+      - command: terraform plan shared-infra-remote-state --stack prod
+
+  apply-all-core:
+    description: |
+      Run 'terraform apply' on all core components in the stack
+    steps:
+      - command: terraform apply tfstate-backend --stack prod -auto-approve
+      # Must apply first: security-groups/storage/app components read its
+      # outputs (shared VPC/RDS/ALB/OIDC state from terraform-shared-infrastructure) via !terraform.state.
+      - command: terraform apply shared-infra-remote-state --stack prod -auto-approve
+
+  destroy-all-core:
+    description: |
+      Run 'terraform destroy' on all core components in the stack
+    steps:
+      - command: terraform destroy shared-infra-remote-state --stack prod -auto-approve
+      - command: terraform destroy tfstate-backend --stack prod -auto-approve

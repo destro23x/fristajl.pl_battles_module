@@ -1,0 +1,161 @@
+# Terraform / Atmos infrastructure pipeline.
+# On PRs: plans only (no apply).
+# On push to main: plans and applies (with manual approval).
+name: Infrastructure
+
+on:
+  # push:
+  #   branches: [main]
+  #   paths:
+  #     - "infrastructure/**"
+  #     - ".github/workflows/infrastructure.yml"
+  # pull_request:
+  #   branches: [main]
+  #   paths:
+  #     - "infrastructure/**"
+  #     - ".github/workflows/infrastructure.yml"
+  workflow_dispatch:
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+  OIDC_AWS_ROLE_TERRAFORM: ${{ secrets.OIDC_AWS_ROLE_TERRAFORM }}
+
+concurrency:
+  group: infrastructure-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+  issues: write
+
+jobs:
+  plan:
+    name: Terraform plan
+    runs-on: ubuntu-latest
+    environment: prod
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/${{ env.OIDC_AWS_ROLE_TERRAFORM }}
+          role-session-name: GitHub_to_AWS_via_FederatedOIDC
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Verify AWS identity
+        run: aws sts get-caller-identity
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.14.6"
+
+      - name: Setup Atmos
+        uses: cloudposse/github-action-setup-atmos@v2
+        with:
+          install-wrapper: true
+
+      - name: Pull vendor modules
+        working-directory: infrastructure
+        run: atmos vendor pull
+
+      - name: Plan core stack
+        working-directory: infrastructure
+        run: atmos workflow plan-all-core -f core.yaml
+
+      - name: Apply core stack to ensure rest plans succeed
+        working-directory: infrastructure
+        run: atmos workflow apply-all-core -f core.yaml
+
+      - name: Plan networking stack
+        working-directory: infrastructure
+        run: atmos workflow plan-all-networking -f networking.yaml
+
+      - name: Plan security stack
+        working-directory: infrastructure
+        run: atmos workflow plan-all-security -f security.yaml
+
+      - name: Plan storage stack
+        working-directory: infrastructure
+        run: atmos workflow plan-all-storage -f storage.yaml
+
+      - name: Plan ALB stack
+        working-directory: infrastructure
+        run: atmos workflow plan-all-alb -f app.yaml
+
+      - name: Plan ECS stack
+        working-directory: infrastructure
+        run: atmos workflow plan-all-ecs -f app.yaml
+
+  apply:
+    name: Terraform apply
+    runs-on: ubuntu-latest
+    needs: plan
+    if: github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    environment: prod
+
+    steps:
+      - name: Wait for manual approval
+        uses: trstringer/manual-approval@v1
+        with:
+          secret: ${{ secrets.GITHUB_TOKEN }}
+          approvers: destro23x
+          minimum-approvals: 1
+          issue-title: "Apply infrastructure changes to prod"
+          issue-body: |
+            Approve this issue to apply the planned infrastructure changes to AWS (prod).
+
+            Comment `approved`/`approve`/`lgtm`/`yes` to proceed, or `denied`/`deny`/`no` to reject.
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/${{ env.OIDC_AWS_ROLE_TERRAFORM }}
+          role-session-name: GitHub_to_AWS_via_FederatedOIDC
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.14.6"
+
+      - name: Setup Atmos
+        uses: cloudposse/github-action-setup-atmos@v2
+        with:
+          install-wrapper: true
+
+      - name: Pull vendor modules
+        working-directory: infrastructure
+        run: atmos vendor pull
+
+      - name: Apply core stack
+        working-directory: infrastructure
+        run: atmos workflow apply-all-core -f core.yaml
+
+      - name: Apply networking stack
+        working-directory: infrastructure
+        run: atmos workflow apply-all-networking -f networking.yaml
+
+      - name: Apply security stack
+        working-directory: infrastructure
+        run: atmos workflow apply-all-security -f security.yaml
+
+      - name: Apply storage stack
+        working-directory: infrastructure
+        run: atmos workflow apply-all-storage -f storage.yaml
+
+      - name: Apply ALB stack
+        working-directory: infrastructure
+        run: atmos workflow apply-all-alb -f app.yaml
+
+      - name: Apply ECS stack
+        working-directory: infrastructure
+        run: atmos workflow apply-all-ecs -f app.yaml

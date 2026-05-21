@@ -1,0 +1,134 @@
+apiVersion: atmos/v1
+kind: AtmosVendorConfig
+metadata:
+  name: vendor-config
+  description: Atmos vendoring manifest
+spec:
+  imports: []
+
+  sources:
+    - component: "route53"
+      source: "github.com/terraform-aws-modules/terraform-aws-route53.git?ref={{.Version}}"
+      version: "v6.5.0"
+      targets:
+        - "components/terraform/route53"
+      included_paths:
+        - "**/*.tf"
+      excluded_paths:
+        - "**/providers.tf"
+      tags:
+        - networking
+    - component: "parameter-store"
+      source: "github.com/terraform-aws-modules/terraform-aws-ssm-parameter.git?ref={{.Version}}"
+      version: "v2.1.0"
+      targets:
+        - "components/terraform/parameter-store"
+      included_paths:
+        - "**/*.tf"
+      excluded_paths:
+        - "**/providers.tf"
+      tags:
+        - storage
+    - component: "aws-tfstate-backend"
+      source: "github.com/cloudposse-terraform-components/aws-tfstate-backend.git//src?ref={{.Version}}"
+      version: "v1.537.3"
+      targets:
+        - "components/terraform/aws-tfstate-backend"
+      included_paths:
+        - "**/*.tf"
+      excluded_paths:
+        - "**/providers.tf"
+      tags:
+        - storage
+    - component: "account-map"
+      source: "github.com/cloudposse-terraform-components/aws-account-map.git//src?ref={{.Version}}"
+      version: "v1.537.2"
+      targets:
+        - "components/terraform/account-map"
+      included_paths:
+        - "**/*.tf"
+      excluded_paths:
+        - "**/providers.tf"
+      tags:
+        - storage
+    - component: "aws-ecs"
+      source: "github.com/terraform-aws-modules/terraform-aws-ecs.git?ref={{.Version}}"
+      version: "v7.5.0"
+      targets:
+        - "components/terraform/aws-ecs"
+      included_paths:
+        - "**/*.tf"
+      excluded_paths:
+        - "**/providers.tf"
+      tags:
+        - application
+    - component: "aws-ecs-service"
+      # Cluster creation moved to terraform-shared-infrastructure - this
+      # project now only creates its own service(s) into that shared
+      # cluster, via the `service` submodule (+ its `container-definition`
+      # dependency below).
+      source: "github.com/terraform-aws-modules/terraform-aws-ecs.git//modules/service?ref={{.Version}}"
+      version: "v7.5.0"
+      targets:
+        - "components/terraform/aws-ecs-service"
+      included_paths:
+        - "**/*.tf"
+      excluded_paths:
+        - "**/providers.tf"
+      tags:
+        - application
+    - component: "aws-ecs-service-container-definition"
+      source: "github.com/terraform-aws-modules/terraform-aws-ecs.git//modules/container-definition?ref={{.Version}}"
+      version: "v7.5.0"
+      targets:
+        - "components/terraform/container-definition"
+      included_paths:
+        - "**/*.tf"
+      excluded_paths:
+        - "**/providers.tf"
+      tags:
+        - application
+    - component: "aws-ecr"
+      source: "github.com/terraform-aws-modules/terraform-aws-ecr.git?ref={{.Version}}"
+      version: "v3.2.0"
+      targets:
+        - "components/terraform/aws-ecr"
+      included_paths:
+        - "**/*.tf"
+      excluded_paths:
+        - "**/providers.tf"
+      tags:
+        - application
+    - component: "aws-acm"
+      source: "github.com/terraform-aws-modules/terraform-aws-acm.git?ref={{.Version}}"
+      version: "v6.3.0"
+      targets:
+        - "components/terraform/aws-acm"
+      included_paths:
+        - "**/*.tf"
+      excluded_paths:
+        - "**/providers.tf"
+      tags:
+        - application
+    - component: "aws-s3-bucket"
+      source: "github.com/terraform-aws-modules/terraform-aws-s3-bucket.git?ref={{.Version}}"
+      version: "v5.14.1"
+      targets:
+        - "components/terraform/aws-s3-bucket"
+      included_paths:
+        - "**/*.tf"
+      excluded_paths:
+        - "**/providers.tf"
+      tags:
+        - application
+    - component: "aws-cloudfront"
+      source: "github.com/terraform-aws-modules/terraform-aws-cloudfront.git?ref={{.Version}}"
+      version: "v6.7.0"
+      targets:
+        - "components/terraform/aws-cloudfront"
+      included_paths:
+        - "**/*.tf"
+      excluded_paths:
+        - "**/providers.tf"
+      tags:
+        - application

@@ -1,0 +1,423 @@
+# yaml-language-server: $schema=https://atmos.tools/schemas/atmos/atmos-manifest/1.0/atmos-manifest.json
+
+components:
+  terraform:
+    aws-ecr:
+      metadata:
+        component: aws-ecr
+      vars:
+        repository_name: "fristajl-backend"
+        repository_image_tag_mutability: "MUTABLE"
+        repository_read_write_access_arns: [!terraform.state shared-infra-remote-state .oidc_role_arn]
+        repository_lifecycle_policy: |
+          {
+            "rules": [
+              {
+                "rulePriority": 1,
+                "description": "Keep last 5 images",
+                "selection": {
+                  "tagStatus": "any",
+                  "countType": "imageCountMoreThan",
+                  "countNumber": 5
+                },
+                "action": { "type": "expire" }
+              }
+            ]
+          }
+    portal-admin-password:
+      metadata:
+        component: fristajl-pl-ssm-random-password
+      vars:
+        name: "/fristajl/portal-admin-password"
+        description: "Randomly generated password for the fristajl admin dashboard user"
+        length: 32
+    jwt-secret:
+      metadata:
+        component: fristajl-pl-ssm-random-password
+      vars:
+        name: "/fristajl/jwt-secret"
+        description: "Randomly generated JWT signing secret for the fristajl backend"
+        length: 64
+    openrouter-api-key:
+      metadata:
+        component: fristajl-pl-ssm-secret
+      vars:
+        name: "/fristajl/openrouter-api-key"
+        description: "OpenRouter API key for the fristajl backend - set the real value manually after apply"
+        value: "REPLACE_ME_AFTER_APPLY"
+    s3-pictures:
+      metadata:
+        component: aws-s3-bucket
+      vars:
+        bucket: "fristajl-prod-pictures"
+        control_object_ownership: true
+        object_ownership: "BucketOwnerEnforced"
+        versioning:
+          enabled: false
+        server_side_encryption_configuration:
+          rule:
+            apply_server_side_encryption_by_default:
+              sse_algorithm: "AES256"
+        logging:
+          target_bucket: !terraform.state access-logs .s3_bucket_id
+          target_prefix: "fristajl-s3-access-logs-pictures/"
+        attach_deny_incorrect_encryption_headers: true
+        attach_deny_insecure_transport_policy: true
+        attach_require_latest_tls_policy: true
+        # Pictures are served directly from the bucket's public HTTPS URL by
+        # the frontend, so public GetObject must be allowed and the
+        # account-level public-access-block defaults must be relaxed for
+        # this bucket only (mirrors the legacy terraform/s3_pictures.tf setup).
+        block_public_policy: false
+        restrict_public_buckets: false
+        attach_policy: true
+        policy: |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Sid": "AllowPublicReadPictures",
+                "Effect": "Allow",
+                "Principal": "*",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::fristajl-prod-pictures/*"
+              }
+            ]
+          }
+    s3-beats:
+      metadata:
+        component: aws-s3-bucket
+      vars:
+        bucket: "fristajl-prod-beats"
+        control_object_ownership: true
+        object_ownership: "BucketOwnerEnforced"
+        versioning:
+          enabled: false
+        server_side_encryption_configuration:
+          rule:
+            apply_server_side_encryption_by_default:
+              sse_algorithm: "AES256"
+        logging:
+          target_bucket: !terraform.state access-logs .s3_bucket_id
+          target_prefix: "fristajl-s3-access-logs-beats/"
+        attach_deny_incorrect_encryption_headers: true
+        attach_deny_insecure_transport_policy: true
+        attach_require_latest_tls_policy: true
+        block_public_policy: false
+        restrict_public_buckets: false
+        attach_policy: true
+        policy: |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Sid": "AllowPublicReadBeats",
+                "Effect": "Allow",
+                "Principal": "*",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::fristajl-prod-beats/*"
+              }
+            ]
+          }
+    s3-sounds:
+      metadata:
+        component: aws-s3-bucket
+      vars:
+        bucket: "fristajl-prod-sounds"
+        control_object_ownership: true
+        object_ownership: "BucketOwnerEnforced"
+        versioning:
+          enabled: false
+        server_side_encryption_configuration:
+          rule:
+            apply_server_side_encryption_by_default:
+              sse_algorithm: "AES256"
+        logging:
+          target_bucket: !terraform.state access-logs .s3_bucket_id
+          target_prefix: "fristajl-s3-access-logs-sounds/"
+        attach_deny_incorrect_encryption_headers: true
+        attach_deny_insecure_transport_policy: true
+        attach_require_latest_tls_policy: true
+        block_public_policy: false
+        restrict_public_buckets: false
+        attach_policy: true
+        policy: |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Sid": "AllowPublicReadSounds",
+                "Effect": "Allow",
+                "Principal": "*",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::fristajl-prod-sounds/*"
+              }
+            ]
+          }
+    s3-topics:
+      metadata:
+        component: aws-s3-bucket
+      vars:
+        bucket: "fristajl-prod-topics"
+        control_object_ownership: true
+        object_ownership: "BucketOwnerEnforced"
+        versioning:
+          enabled: false
+        server_side_encryption_configuration:
+          rule:
+            apply_server_side_encryption_by_default:
+              sse_algorithm: "AES256"
+        logging:
+          target_bucket: !terraform.state access-logs .s3_bucket_id
+          target_prefix: "fristajl-s3-access-logs-topics/"
+        attach_deny_incorrect_encryption_headers: true
+        attach_deny_insecure_transport_policy: true
+        attach_require_latest_tls_policy: true
+        block_public_policy: false
+        restrict_public_buckets: false
+        attach_policy: true
+        policy: |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Sid": "AllowPublicReadTopics",
+                "Effect": "Allow",
+                "Principal": "*",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::fristajl-prod-topics/*"
+              }
+            ]
+          }
+    s3-pictures-propositions:
+      metadata:
+        component: aws-s3-bucket
+      vars:
+        bucket: "fristajl-prod-pictures-propositions"
+        control_object_ownership: true
+        object_ownership: "BucketOwnerEnforced"
+        versioning:
+          enabled: false
+        server_side_encryption_configuration:
+          rule:
+            apply_server_side_encryption_by_default:
+              sse_algorithm: "AES256"
+        logging:
+          target_bucket: !terraform.state access-logs .s3_bucket_id
+          target_prefix: "fristajl-s3-access-logs-pictures-propositions/"
+        attach_deny_incorrect_encryption_headers: true
+        attach_deny_insecure_transport_policy: true
+        attach_require_latest_tls_policy: true
+        block_public_policy: false
+        restrict_public_buckets: false
+        attach_policy: true
+        policy: |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Sid": "AllowPublicReadPicturesPropositions",
+                "Effect": "Allow",
+                "Principal": "*",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::fristajl-prod-pictures-propositions/*"
+              }
+            ]
+          }
+    s3-beats-propositions:
+      metadata:
+        component: aws-s3-bucket
+      vars:
+        bucket: "fristajl-prod-beats-propositions"
+        control_object_ownership: true
+        object_ownership: "BucketOwnerEnforced"
+        versioning:
+          enabled: false
+        server_side_encryption_configuration:
+          rule:
+            apply_server_side_encryption_by_default:
+              sse_algorithm: "AES256"
+        logging:
+          target_bucket: !terraform.state access-logs .s3_bucket_id
+          target_prefix: "fristajl-s3-access-logs-beats-propositions/"
+        attach_deny_incorrect_encryption_headers: true
+        attach_deny_insecure_transport_policy: true
+        attach_require_latest_tls_policy: true
+        block_public_policy: false
+        restrict_public_buckets: false
+        attach_policy: true
+        policy: |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Sid": "AllowPublicReadBeatsPropositions",
+                "Effect": "Allow",
+                "Principal": "*",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::fristajl-prod-beats-propositions/*"
+              }
+            ]
+          }
+    s3-sounds-propositions:
+      metadata:
+        component: aws-s3-bucket
+      vars:
+        bucket: "fristajl-prod-sounds-propositions"
+        control_object_ownership: true
+        object_ownership: "BucketOwnerEnforced"
+        versioning:
+          enabled: false
+        server_side_encryption_configuration:
+          rule:
+            apply_server_side_encryption_by_default:
+              sse_algorithm: "AES256"
+        logging:
+          target_bucket: !terraform.state access-logs .s3_bucket_id
+          target_prefix: "fristajl-s3-access-logs-sounds-propositions/"
+        attach_deny_incorrect_encryption_headers: true
+        attach_deny_insecure_transport_policy: true
+        attach_require_latest_tls_policy: true
+        block_public_policy: false
+        restrict_public_buckets: false
+        attach_policy: true
+        policy: |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Sid": "AllowPublicReadSoundsPropositions",
+                "Effect": "Allow",
+                "Principal": "*",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::fristajl-prod-sounds-propositions/*"
+              }
+            ]
+          }
+    s3-topics-propositions:
+      metadata:
+        component: aws-s3-bucket
+      vars:
+        bucket: "fristajl-prod-topics-propositions"
+        control_object_ownership: true
+        object_ownership: "BucketOwnerEnforced"
+        versioning:
+          enabled: false
+        server_side_encryption_configuration:
+          rule:
+            apply_server_side_encryption_by_default:
+              sse_algorithm: "AES256"
+        logging:
+          target_bucket: !terraform.state access-logs .s3_bucket_id
+          target_prefix: "fristajl-s3-access-logs-topics-propositions/"
+        attach_deny_incorrect_encryption_headers: true
+        attach_deny_insecure_transport_policy: true
+        attach_require_latest_tls_policy: true
+    s3-tiktoks:
+      metadata:
+        component: aws-s3-bucket
+      vars:
+        bucket: "fristajl-prod-tiktoks"
+        control_object_ownership: true
+        object_ownership: "BucketOwnerEnforced"
+        versioning:
+          enabled: false
+        server_side_encryption_configuration:
+          rule:
+            apply_server_side_encryption_by_default:
+              sse_algorithm: "AES256"
+        logging:
+          target_bucket: !terraform.state access-logs .s3_bucket_id
+          target_prefix: "fristajl-s3-access-logs-tiktoks/"
+        attach_deny_incorrect_encryption_headers: true
+        attach_deny_insecure_transport_policy: true
+        attach_require_latest_tls_policy: true
+        block_public_policy: false
+        restrict_public_buckets: false
+        attach_policy: true
+        policy: |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Sid": "AllowPublicReadTiktoks",
+                "Effect": "Allow",
+                "Principal": "*",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::fristajl-prod-tiktoks/*"
+              }
+            ]
+          }
+    s3-questions:
+      metadata:
+        component: aws-s3-bucket
+      vars:
+        bucket: "fristajl-prod-questions"
+        control_object_ownership: true
+        object_ownership: "BucketOwnerEnforced"
+        versioning:
+          enabled: false
+        server_side_encryption_configuration:
+          rule:
+            apply_server_side_encryption_by_default:
+              sse_algorithm: "AES256"
+        logging:
+          target_bucket: !terraform.state access-logs .s3_bucket_id
+          target_prefix: "fristajl-s3-access-logs-questions/"
+        attach_deny_incorrect_encryption_headers: true
+        attach_deny_insecure_transport_policy: true
+        attach_require_latest_tls_policy: true
+        block_public_policy: false
+        restrict_public_buckets: false
+        attach_policy: true
+        policy: |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Sid": "AllowPublicReadQuestions",
+                "Effect": "Allow",
+                "Principal": "*",
+                "Action": "s3:GetObject",
+                "Resource": "arn:aws:s3:::fristajl-prod-questions/*"
+              }
+            ]
+          }
+    s3-frontend:
+      metadata:
+        component: aws-s3-bucket
+      vars:
+        bucket: "fristajl.pl"
+        control_object_ownership: true
+        object_ownership: "BucketOwnerEnforced"
+        versioning:
+          enabled: true
+        server_side_encryption_configuration:
+          rule:
+            apply_server_side_encryption_by_default:
+              sse_algorithm: "AES256"
+        logging:
+          target_bucket: !terraform.state access-logs .s3_bucket_id
+          target_prefix: "fristajl-s3-access-logs-frontend/"
+        attach_deny_incorrect_encryption_headers: true
+        attach_deny_insecure_transport_policy: true
+        attach_require_latest_tls_policy: true
+        attach_policy: true
+        policy: |
+          {
+            "Version": "2012-10-17",
+            "Statement": [
+              {
+                "Sid": "AllowCloudFrontAccess",
+                "Effect": "Allow",
+                "Principal": {
+                    "Service": "cloudfront.amazonaws.com"
+                },
+                "Action": "s3:GetObject",
+                "Resource": [
+                    "arn:aws:s3:::fristajl.pl/*",
+                    "arn:aws:s3:::fristajl.pl"
+                ]
+              }
+            ]
+          }

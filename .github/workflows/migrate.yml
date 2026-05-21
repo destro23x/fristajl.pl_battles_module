@@ -1,0 +1,157 @@
+# Applies Flyway schema migrations against the shared RDS instance, using the
+# dedicated migration_user_fristajl, which authenticates via IAM (member of
+# the rds_iam role, no password - see infrastructure/lambda/db-user-provisioner).
+# Migrations are intentionally NOT run at backend container startup anymore
+# (see backend/src/main/kotlin/io/javalin/omeglin/UserStore.kt) - they are
+# applied here instead, as a separate, auditable step.
+#
+# The migration runs as a one-off ECS Fargate task inside the VPC (same
+# network path the running backend service uses to reach RDS), instead of
+# connecting directly from the GitHub-hosted runner. RDS has no public
+# ingress, so a direct runner-to-RDS connection would time out.
+#
+# The task definition's container image is passed in at apply time as a
+# Terraform variable - this workflow runs `atmos terraform apply` with
+# `-var image=<backend image tag>` (fristajl-backend:<short-sha>, produced by
+# backend.yml) so Terraform stays the sole owner of container_definitions
+# instead of a side-channel AWS CLI patch.
+name: Database migrations
+
+on:
+  # push:
+  #   branches: [main]
+  #   paths:
+  #     - "backend/src/main/kotlin/db/migration/**"
+  #     - "backend/src/main/resources/db/migration/**"
+  #     - ".github/workflows/migrate.yml"
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Optional backend image tag to migrate with (default: short SHA of this commit)"
+        required: false
+        type: string
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+  OIDC_AWS_ROLE_TERRAFORM: ${{ secrets.OIDC_AWS_ROLE_TERRAFORM }}
+  ECR_REPOSITORY: fristajl-backend
+  ECS_CLUSTER_NAME: applications
+  TASK_FAMILY: fristajl-db-migrator
+
+concurrency:
+  group: database-migrations-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+  issues: write
+
+jobs:
+  migrate:
+    name: Run Flyway migrate
+    runs-on: ubuntu-latest
+    environment: prod
+
+    steps:
+      - name: Wait for manual approval
+        uses: trstringer/manual-approval@v1
+        with:
+          secret: ${{ secrets.GITHUB_TOKEN }}
+          approvers: destro23x
+          minimum-approvals: 1
+          issue-title: "Run database migrations on prod"
+          issue-body: |
+            Approve this issue to run Flyway migrations against the prod RDS instance using migration_user_fristajl.
+
+            Comment `approved`/`approve`/`lgtm`/`yes` to proceed, or `denied`/`deny`/`no` to reject.
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/${{ env.OIDC_AWS_ROLE_TERRAFORM }}
+          role-session-name: GitHub_to_AWS_via_FederatedOIDC
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Verify AWS identity
+        run: aws sts get-caller-identity
+
+      - name: Resolve backend image to migrate with
+        run: |
+          set -euo pipefail
+          IMAGE_TAG="${{ github.event.inputs.image_tag }}"
+          IMAGE_TAG="${IMAGE_TAG:-${GITHUB_SHA::7}}"
+          echo "IMAGE_URI=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}" >> "$GITHUB_ENV"
+
+      - name: Resolve migration task network configuration
+        run: |
+          set -euo pipefail
+
+          SUBNET_IDS=$(aws ssm get-parameter --name "/fristajl/ecs/${TASK_FAMILY}/subnet-ids" --query 'Parameter.Value' --output text)
+          SECURITY_GROUP_ID=$(aws ssm get-parameter --name "/fristajl/ecs/${TASK_FAMILY}/security-group-id" --query 'Parameter.Value' --output text)
+
+          echo "SUBNET_IDS=$SUBNET_IDS" >> "$GITHUB_ENV"
+          echo "SECURITY_GROUP_ID=$SECURITY_GROUP_ID" >> "$GITHUB_ENV"
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.14.6"
+
+      - name: Setup Atmos
+        uses: cloudposse/github-action-setup-atmos@v2
+        with:
+          install-wrapper: true
+
+      - name: Pull vendor modules
+        working-directory: infrastructure
+        run: atmos vendor pull
+
+      - name: Apply migrator task definition with the current image
+        working-directory: infrastructure
+        run: atmos terraform apply db-migrator-task --stack prod -var="image=${IMAGE_URI}" -auto-approve
+
+      - name: Run migration task
+        run: |
+          set -euo pipefail
+
+          TASK_ARN=$(aws ecs run-task \
+            --cluster "$ECS_CLUSTER_NAME" \
+            --task-definition "$TASK_FAMILY" \
+            --launch-type FARGATE \
+            --network-configuration "awsvpcConfiguration={subnets=[$SUBNET_IDS],securityGroups=[$SECURITY_GROUP_ID],assignPublicIp=ENABLED}" \
+            --query 'tasks[0].taskArn' --output text)
+
+          if [ -z "$TASK_ARN" ] || [ "$TASK_ARN" = "None" ]; then
+            echo "Failed to start migration task" >&2
+            exit 1
+          fi
+
+          echo "TASK_ARN=$TASK_ARN" >> "$GITHUB_ENV"
+          echo "Started migration task: $TASK_ARN"
+
+      - name: Wait for migration task to finish
+        run: |
+          set -euo pipefail
+          aws ecs wait tasks-stopped --cluster "$ECS_CLUSTER_NAME" --tasks "$TASK_ARN"
+
+      - name: Check migration task result
+        run: |
+          set -euo pipefail
+
+          TASK_JSON=$(aws ecs describe-tasks --cluster "$ECS_CLUSTER_NAME" --tasks "$TASK_ARN")
+          EXIT_CODE=$(echo "$TASK_JSON" | jq -r '.tasks[0].containers[0].exitCode // empty')
+          STOPPED_REASON=$(echo "$TASK_JSON" | jq -r '.tasks[0].stoppedReason // empty')
+
+          echo "Stopped reason: $STOPPED_REASON"
+          echo "Container exit code: $EXIT_CODE"
+          echo "Logs: CloudWatch log group /ecs/${TASK_FAMILY}"
+
+          if [ -z "$EXIT_CODE" ] || [ "$EXIT_CODE" != "0" ]; then
+            echo "Migration task failed" >&2
+            exit 1
+          fi

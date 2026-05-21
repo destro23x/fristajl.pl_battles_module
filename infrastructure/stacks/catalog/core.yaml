@@ -1,0 +1,35 @@
+# yaml-language-server: $schema=https://atmos.tools/schemas/atmos/atmos-manifest/1.0/atmos-manifest.json
+
+# Read-only access to the terraform-shared-infrastructure project's
+# Terraform state. That project lives in a separate git repo with its own
+# Atmos-managed S3 backend, in the SAME AWS account. fristajl reuses its
+# VPC, subnets, shared ALB, RDS instance, PostgreSQL security group and
+# GitHub OIDC provider instead of creating its own - none of those
+# resources are managed from this repo.
+#
+# Bucket name verified against terraform-shared-infrastructure's own
+# aws-tfstate-backend component (namespace "shared-infra", tenant "pl",
+# stage "prod" -> "shared-infra-pl-prod-tfstate") and matches the same
+# bucket events-app's own events-app-remote-state component reads from -
+# see terraform-shared-infrastructure/infrastructure/components/terraform/aws-tfstate-backend/backend.tf.json.
+components:
+  terraform:
+    tfstate-backend:
+      metadata:
+        component: aws-tfstate-backend
+      vars:
+        enable_server_side_encryption: true
+        access_roles_enabled: false
+        s3_state_lock_enabled: true
+        enabled: true
+        force_destroy: false
+        prevent_unencrypted_uploads: true
+        account_map_enabled: false
+    shared-infra-remote-state:
+      metadata:
+        component: fristajl-pl-remote-state
+      vars:
+        shared_tfstate_bucket: "shared-infra-pl-prod-tfstate"
+        shared_tfstate_region: "eu-central-1"
+        shared_workspace: "prod"
+        shared_rds_instance_identifier: "shared-infra-db"

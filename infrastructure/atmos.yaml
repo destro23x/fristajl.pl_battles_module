@@ -1,0 +1,41 @@
+base_path: "./"
+
+workflows:
+  base_path: "stacks/workflows"
+
+vars:
+  namespace: fristajl
+  delimiter: "-"
+  label_order:
+    - namespace
+    - tenant
+    - stage
+    - name
+
+components:
+  terraform:
+    base_path: "components/terraform"
+    apply_auto_approve: false
+    deploy_run_init: true
+    init_run_reconfigure: true
+    auto_generate_backend_file: true
+    providers:
+      aws:
+        region: "eu-central-1"
+stores:
+  ssm:
+    type: aws-ssm-parameter-store
+    options:
+      region: eu-central-1
+
+stacks:
+  base_path: "stacks"
+  included_paths:
+    - "**/*"
+  excluded_paths:
+    - "catalog/**/*"
+  name_pattern: "{stage}"
+
+logs:
+  level: Info
+  file: "/dev/stderr"

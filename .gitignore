@@ -33,3 +33,30 @@ build/
 
 ### Mac OS ###
 .DS_Store
+
+### Node / Playwright ###
+node_modules/
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
+
+# Terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+**/plugin-cache/*
+**/.terraform.lock.hcl
+**/builds/*
+**/*.tf.json
+**/*.tfvars.json
+**/*.planfile
+
+# Information
+INFORMATIONS.md
+
+# Atmos
+infrastructure/components/terraform/*
+!infrastructure/components/terraform/fristajl-pl-*
+**/build/*.zip
+infrastructure/components/terraform/fristajl-pl-db-provisioner-lambda/build/db-user-provisioner.zip

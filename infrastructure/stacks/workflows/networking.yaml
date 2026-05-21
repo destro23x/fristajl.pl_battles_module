@@ -1,0 +1,21 @@
+name: Networking
+description: Atmos workflows for managing networking components.
+
+workflows:
+  plan-all-networking:
+    description: |
+      Run 'terraform plan' on all networking components in the stack
+    steps:
+      - command: terraform plan route53 --stack prod
+
+  apply-all-networking:
+    description: |
+      Run 'terraform apply' on all networking components in the stack
+    steps:
+      - command: terraform apply route53 --stack prod -auto-approve
+
+  destroy-all-networking:
+    description: |
+      Run 'terraform destroy' on all networking components in the stack
+    steps:
+      - command: terraform destroy route53 --stack prod -auto-approve

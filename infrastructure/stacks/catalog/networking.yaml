@@ -1,0 +1,19 @@
+# yaml-language-server: $schema=https://atmos.tools/schemas/atmos/atmos-manifest/1.0/atmos-manifest.json
+
+# No vpc component here - fristajl reuses events-app's VPC/subnets via
+# the "shared-infra-remote-state" component (see catalog/core.yaml).
+components:
+  terraform:
+    route53:
+      metadata:
+        component: route53
+      vars:
+        name: "fristajl.pl"
+        comment: "Public hosted zone for fristajl.pl"
+        # The domain already has a hosted zone created by the legacy
+        # terraform/ setup (see ../../../terraform/route53.tf). Creating
+        # this component will create a SECOND, separate hosted zone with its
+        # own NS records. Either update the registrar's NS records to point
+        # at this new zone once it's applied, or import the existing zone
+        # (`terraform import`) instead of letting this create a duplicate.
+        force_destroy: false

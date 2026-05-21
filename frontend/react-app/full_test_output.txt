@@ -1,0 +1,130 @@
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.7 [39m[90m/Users/krzysztofsz/Projects/fristajl.pl/frontend/react-app[39m
+
+ [32m✓[39m src/test/TopicCard.test.tsx[2m > [22mTopicCard[2m > [22mrenders initial placeholder text[32m 66[2mms[22m[39m
+ [32m✓[39m src/test/GuideSection.test.tsx[2m > [22mGuideSection[2m > [22mrenders the section heading[32m 119[2mms[22m[39m
+ [32m✓[39m src/test/GuideSection.test.tsx[2m > [22mGuideSection[2m > [22mhas correct section id for navigation anchor[32m 3[2mms[22m[39m
+ [32m✓[39m src/test/GuideSection.test.tsx[2m > [22mGuideSection[2m > [22mrenders "Jak ćwiczyć?" subsection[32m 12[2mms[22m[39m
+ [32m✓[39m src/test/GuideSection.test.tsx[2m > [22mGuideSection[2m > [22mrenders "Wskazówka" subsection[32m 17[2mms[22m[39m
+ [32m✓[39m src/test/GuideSection.test.tsx[2m > [22mGuideSection[2m > [22mrenders "Zrymuj ze sobą wyrazy" table heading[32m 7[2mms[22m[39m
+ [32m✓[39m src/test/GuideSection.test.tsx[2m > [22mGuideSection[2m > [22mrenders "Sekcja kreatywna" subsection[32m 8[2mms[22m[39m
+ [32m✓[39m src/test/GuideSection.test.tsx[2m > [22mGuideSection[2m > [22mshows rhyme example Moore → Mur / Muł / Mól[32m 15[2mms[22m[39m
+ [32m✓[39m src/test/GuideSection.test.tsx[2m > [22mGuideSection[2m > [22mshows rhyme example Słuchawki · Jezioro[32m 5[2mms[22m[39m
+ [32m✓[39m src/test/GuideSection.test.tsx[2m > [22mGuideSection[2m > [22mshows creative pair Czaszka + Obojętnie[32m 4[2mms[22m[39m
+ [32m✓[39m src/test/GuideSection.test.tsx[2m > [22mGuideSection[2m > [22mshows creative pair Cymbał + Rokitnik[32m 17[2mms[22m[39m
+ [32m✓[39m src/test/GuideSection.test.tsx[2m > [22mGuideSection[2m > [22mshows the Jeziorko example quote[32m 18[2mms[22m[39m
+ [32m✓[39m src/test/GuideSection.test.tsx[2m > [22mGuideSection[2m > [22mrenders 5 how-to steps as list items[32m 17[2mms[22m[39m
+ [32m✓[39m src/test/TikTokCard.test.tsx[2m > [22mTikTokCard[2m > [22mrenders initial placeholder text[32m 73[2mms[22m[39m
+ [32m✓[39m src/test/AiTopicCard.test.tsx[2m > [22mAiTopicCard[2m > [22mrenders initial placeholder text[32m 45[2mms[22m[39m
+ [32m✓[39m src/test/ImageCard.test.tsx[2m > [22mImageCard[2m > [22mrenders initial placeholder text[32m 60[2mms[22m[39m
+ [32m✓[39m src/test/TopicCard.test.tsx[2m > [22mTopicCard[2m > [22mrenders Losuj temat button[32m 82[2mms[22m[39m
+ [32m✓[39m src/test/TopicCard.test.tsx[2m > [22mTopicCard[2m > [22mrenders Zaproponuj temat button[32m 43[2mms[22m[39m
+ [32m✓[39m src/test/TopicCard.test.tsx[2m > [22mTopicCard[2m > [22mshows proposal input after clicking Zaproponuj temat[32m 36[2mms[22m[39m
+ [32m✓[39m src/test/TopicCard.test.tsx[2m > [22mTopicCard[2m > [22msend button is disabled when input is empty[32m 16[2mms[22m[39m
+ [32m✓[39m src/test/FloatingTimer.test.tsx[2m > [22mFloatingTimer[2m > [22mrenders with default 60 s display[32m 66[2mms[22m[39m
+ [32m✓[39m src/test/Navigation.test.tsx[2m > [22mNavigation[2m > [22mrenders logo text[32m 82[2mms[22m[39m
+ [32m✓[39m src/test/Navigation.test.tsx[2m > [22mNavigation[2m > [22mrenders "Home" nav item[32m 9[2mms[22m[39m
+ [32m✓[39m src/test/TikTokCard.test.tsx[2m > [22mTikTokCard[2m > [22mrenders Losuj TikToka button[32m 134[2mms[22m[39m
+ [32m✓[39m src/test/TikTokCard.test.tsx[2m > [22mTikTokCard[2m > [22mrenders Zaproponuj TikToka button[32m 10[2mms[22m[39m
+ [32m✓[39m src/test/TikTokCard.test.tsx[2m > [22mTikTokCard[2m > [22mshows URL input after clicking Zaproponuj TikToka[32m 21[2mms[22m[39m
+ [32m✓[39m src/test/TikTokCard.test.tsx[2m > [22mTikTokCard[2m > [22msend button is disabled when input is empty[32m 26[2mms[22m[39m
+ [32m✓[39m src/test/TikTokCard.test.tsx[2m > [22mTikTokCard[2m > [22msend button enabled after typing a URL[32m 21[2mms[22m[39m
+ [32m✓[39m src/test/TikTokCard.test.tsx[2m > [22mTikTokCard[2m > [22mshows invalid URL message for malformed URL[32m 16[2mms[22m[39m
+ [32m✓[39m src/test/AiTopicCard.test.tsx[2m > [22mAiTopicCard[2m > [22mrenders "Losuj temat AI" button[32m 158[2mms[22m[39m
+ [32m✓[39m src/test/AiTopicCard.test.tsx[2m > [22mAiTopicCard[2m > [22mshows topic after successful roll (cache hit — queue populated)[32m 44[2mms[22m[39m
+ [32m✓[39m src/test/AiTopicCard.test.tsx[2m > [22mAiTopicCard[2m > [22mshows model name below topic[32m 19[2mms[22m[39m
+ [32m✓[39m src/test/SoundCard.test.tsx[2m > [22mSoundCard[2m > [22mrenders "Losuj dźwięk" button[32m 221[2mms[22m[39m
+ [32m✓[39m src/test/SoundCard.test.tsx[2m > [22mSoundCard[2m > [22mrenders "Zaproponuj dźwięk" button[32m 9[2mms[22m[39m
+ [32m✓[39m src/test/SoundCard.test.tsx[2m > [22mSoundCard[2m > [22mshows file input after clicking "Zaproponuj dźwięk"[32m 20[2mms[22m[39m
+ [32m✓[39m src/test/SoundCard.test.tsx[2m > [22mSoundCard[2m > [22msend button is disabled when no file is selected[32m 42[2mms[22m[39m
+ [32m✓[39m src/test/FloatingTimer.test.tsx[2m > [22mFloatingTimer[2m > [22mshows Start button[32m 199[2mms[22m[39m
+ [32m✓[39m src/test/FloatingTimer.test.tsx[2m > [22mFloatingTimer[2m > [22mshows Reset button[32m 13[2mms[22m[39m
+ [32m✓[39m src/test/FloatingTimer.test.tsx[2m > [22mFloatingTimer[2m > [22mshows 30 s duration button[32m 21[2mms[22m[39m
+ [32m✓[39m src/test/FloatingTimer.test.tsx[2m > [22mFloatingTimer[2m > [22mswitches to 30 s when 30s button clicked[32m 11[2mms[22m[39m
+ [32m✓[39m src/test/FloatingTimer.test.tsx[2m > [22mFloatingTimer[2m > [22mswitches to 90 s when 90s button clicked[32m 8[2mms[22m[39m
+ [32m✓[39m src/test/BeatCard.test.tsx[2m > [22mBeatCard[2m > [22mrenders "Losuj bit" button[32m 241[2mms[22m[39m
+ [32m✓[39m src/test/BeatCard.test.tsx[2m > [22mBeatCard[2m > [22mrenders genre selector with Trap and Oldschool options[32m 13[2mms[22m[39m
+ [32m✓[39m src/test/BeatCard.test.tsx[2m > [22mBeatCard[2m > [22mrenders "Zaproponuj bit" button[32m 19[2mms[22m[39m
+ [32m✓[39m src/test/BeatCard.test.tsx[2m > [22mBeatCard[2m > [22mshows file input after clicking "Zaproponuj bit"[32m 26[2mms[22m[39m
+ [32m✓[39m src/test/BeatCard.test.tsx[2m > [22mBeatCard[2m > [22msend button is disabled when no file is selected[32m 29[2mms[22m[39m
+ [32m✓[39m src/test/TopicCard.test.tsx[2m > [22mTopicCard[2m > [22msend button is enabled after typing a topic[32m 15[2mms[22m[39m
+ [32m✓[39m src/test/TopicCard.test.tsx[2m > [22mTopicCard[2m > [22mcancel button hides the proposal form[32m 29[2mms[22m[39m
+ [32m✓[39m src/test/TopicCard.test.tsx[2m > [22mTopicCard[2m > [22mshows success message after successful proposal[32m 18[2mms[22m[39m
+ [32m✓[39m src/test/TopicCard.test.tsx[2m > [22mTopicCard[2m > [22mshows rate limit message on 429[32m 49[2mms[22m[39m
+ [32m✓[39m src/test/ImageCard.test.tsx[2m > [22mImageCard[2m > [22mrenders "Losuj obrazek" button[32m 171[2mms[22m[39m
+ [32m✓[39m src/test/ImageCard.test.tsx[2m > [22mImageCard[2m > [22mrenders "Zaproponuj obrazek" button[32m 18[2mms[22m[39m
+ [32m✓[39m src/test/ImageCard.test.tsx[2m > [22mImageCard[2m > [22mshows file input after clicking "Zaproponuj obrazek"[32m 30[2mms[22m[39m
+ [32m✓[39m src/test/ImageCard.test.tsx[2m > [22mImageCard[2m > [22msend button is disabled when no file is selected[32m 12[2mms[22m[39m
+ [32m✓[39m src/test/ImageCard.test.tsx[2m > [22mImageCard[2m > [22mcancel button hides the proposal form[32m 24[2mms[22m[39m
+ [32m✓[39m src/test/Navigation.test.tsx[2m > [22mNavigation[2m > [22mrenders "Narzędzia" nav item[32m 13[2mms[22m[39m
+ [32m✓[39m src/test/Navigation.test.tsx[2m > [22mNavigation[2m > [22mrenders "Wspomóż" nav item[32m 20[2mms[22m[39m
+ [32m✓[39m src/test/Navigation.test.tsx[2m > [22mNavigation[2m > [22mrenders "Poradnik" nav item[32m 60[2mms[22m[39m
+ [32m✓[39m src/test/Navigation.test.tsx[2m > [22mNavigation[2m > [22mrenders "Kontakt" nav item[32m 9[2mms[22m[39m
+ [32m✓[39m src/test/Navigation.test.tsx[2m > [22mNavigation[2m > [22mrenders "Arena" nav item as external link[32m 7[2mms[22m[39m
+ [32m✓[39m src/test/TikTokCard.test.tsx[2m > [22mTikTokCard[2m > [22mshows invalid URL message for valid-looking but wrong-format URL[32m 16[2mms[22m[39m
+ [32m✓[39m src/test/TikTokCard.test.tsx[2m > [22mTikTokCard[2m > [22msends proposal on valid URL[32m 73[2mms[22m[39m
+ [32m✓[39m src/test/AiTopicCard.test.tsx[2m > [22mAiTopicCard[2m > [22mdrains queue locally before re-fetching[32m 83[2mms[22m[39m
+ [32m✓[39m src/test/AiTopicCard.test.tsx[2m > [22mAiTopicCard[2m > [22mshows error message when backend returns non-ok[32m 24[2mms[22m[39m
+ [32m✓[39m src/test/AiTopicCard.test.tsx[2m > [22mAiTopicCard[2m > [22mshows error message on network failure[32m 8[2mms[22m[39m
+ [32m✓[39m src/test/AiTopicCard.test.tsx[2m > [22mAiTopicCard[2m > [22mshows loading text while fetching[32m 7[2mms[22m[39m
+ [32m✓[39m src/test/Navigation.test.tsx[2m > [22mNavigation[2m > [22m"Poradnik" appears before "Kontakt" in the DOM[32m 9[2mms[22m[39m
+ [32m✓[39m src/test/Navigation.test.tsx[2m > [22mNavigation[2m > [22mclicking "Poradnik" scrolls to #guide section[32m 13[2mms[22m[39m
+ [32m✓[39m src/test/Navigation.test.tsx[2m > [22mNavigation[2m > [22mclicking "Kontakt" scrolls to #contact section[32m 13[2mms[22m[39m
+ [32m✓[39m src/test/FloatingTimer.test.tsx[2m > [22mFloatingTimer[2m > [22mcounts down after Start is pressed[32m 55[2mms[22m[39m
+ [32m✓[39m src/test/FloatingTimer.test.tsx[2m > [22mFloatingTimer[2m > [22mshows "Czas!" and 0:00 when timer expires[32m 32[2mms[22m[39m
+ [32m✓[39m src/test/FloatingTimer.test.tsx[2m > [22mFloatingTimer[2m > [22mresets display after Reset click[32m 16[2mms[22m[39m
+ [32m✓[39m src/test/FloatingTimer.test.tsx[2m > [22mFloatingTimer[2m > [22mpauses countdown when Pauza is pressed[32m 13[2mms[22m[39m
+ [32m✓[39m src/test/SoundCard.test.tsx[2m > [22mSoundCard[2m > [22mcancel button hides the proposal form[32m 72[2mms[22m[39m
+ [32m✓[39m src/test/SoundCard.test.tsx[2m > [22mSoundCard[2m > [22mshows success message after successful sound proposal[32m 22[2mms[22m[39m
+ [32m✓[39m src/test/SoundCard.test.tsx[2m > [22mSoundCard[2m > [22mshows rate limit message on 429[32m 28[2mms[22m[39m
+ [32m✓[39m src/test/SoundCard.test.tsx[2m > [22mSoundCard[2m > [22mshows error message on server error[32m 22[2mms[22m[39m
+ [32m✓[39m src/test/SoundCard.test.tsx[2m > [22mSoundCard[2m > [22mrolls a sound (index fetch fails → fallback)[32m 14[2mms[22m[39m
+ [32m✓[39m src/test/TopicCard.test.tsx[2m > [22mTopicCard[2m > [22mshows error message on server error[32m 28[2mms[22m[39m
+ [32m✓[39m src/test/TopicCard.test.tsx[2m > [22mTopicCard[2m > [22mshows error message on network failure[32m 43[2mms[22m[39m
+ [32m✓[39m src/test/TopicCard.test.tsx[2m > [22mTopicCard[2m > [22mshows topic after successful roll[32m 11[2mms[22m[39m
+ [32m✓[39m src/test/TopicCard.test.tsx[2m > [22mTopicCard[2m > [22mshows fallback message when roll response has no topic[32m 7[2mms[22m[39m
+ [32m✓[39m src/test/TopicCard.test.tsx[2m > [22mTopicCard[2m > [22mshows error text when roll fails[32m 10[2mms[22m[39m
+ [32m✓[39m src/test/BeatCard.test.tsx[2m > [22mBeatCard[2m > [22mcancel button hides the proposal form[32m 45[2mms[22m[39m
+ [32m✓[39m src/test/BeatCard.test.tsx[2m > [22mBeatCard[2m > [22mshows success message after successful beat proposal[32m 36[2mms[22m[39m
+ [32m✓[39m src/test/BeatCard.test.tsx[2m > [22mBeatCard[2m > [22mshows rate limit message on 429[32m 21[2mms[22m[39m
+ [32m✓[39m src/test/BeatCard.test.tsx[2m > [22mBeatCard[2m > [22mshows error message on server error[32m 16[2mms[22m[39m
+ [32m✓[39m src/test/BeatCard.test.tsx[2m > [22mBeatCard[2m > [22mrolls a beat (index fetch fails → fallback)[32m 6[2mms[22m[39m
+ [32m✓[39m src/test/BeatCard.test.tsx[2m > [22mBeatCard[2m > [22mchanging genre to Oldschool and rolling uses oldschool prefix[32m 12[2mms[22m[39m
+ [32m✓[39m src/test/TikTokCard.test.tsx[2m > [22mTikTokCard[2m > [22mshows rate limit message on 429[32m 26[2mms[22m[39m
+ [32m✓[39m src/test/TikTokCard.test.tsx[2m > [22mTikTokCard[2m > [22mshows error message on server error[32m 19[2mms[22m[39m
+ [32m✓[39m src/test/TikTokCard.test.tsx[2m > [22mTikTokCard[2m > [22mshows empty state when backend returns no videos[32m 16[2mms[22m[39m
+ [32m✓[39m src/test/TikTokCard.test.tsx[2m > [22mTikTokCard[2m > [22mcancel button hides the proposal form[32m 13[2mms[22m[39m
+ [32m✓[39m src/test/ImageCard.test.tsx[2m > [22mImageCard[2m > [22mshows success message after successful proposal[32m 81[2mms[22m[39m
+ [32m✓[39m src/test/ImageCard.test.tsx[2m > [22mImageCard[2m > [22mshows rate limit message on 429[32m 23[2mms[22m[39m
+ [32m✓[39m src/test/ImageCard.test.tsx[2m > [22mImageCard[2m > [22mshows error message on server error[32m 31[2mms[22m[39m
+ [32m✓[39m src/test/ImageCard.test.tsx[2m > [22mImageCard[2m > [22mshows error message on network failure[32m 16[2mms[22m[39m
+ [32m✓[39m src/test/ImageCard.test.tsx[2m > [22mImageCard[2m > [22mshows image after successful roll[32m 11[2mms[22m[39m
+ [32m✓[39m src/test/validation.test.ts[2m > [22mTikTok URL validation[2m > [22maccepts valid URL: https://www.tiktok.com/@username/video/1234567890[32m 1[2mms[22m[39m
+ [32m✓[39m src/test/validation.test.ts[2m > [22mTikTok URL validation[2m > [22maccepts valid URL: https://www.tiktok.com/@user.name/video/9876543210[32m 0[2mms[22m[39m
+ [32m✓[39m src/test/validation.test.ts[2m > [22mTikTok URL validation[2m > [22maccepts valid URL: https://www.tiktok.com/@user_name123/video/0[32m 0[2mms[22m[39m
+ [32m✓[39m src/test/validation.test.ts[2m > [22mTikTok URL validation[2m > [22maccepts valid URL: https://www.tiktok.com/@u/video/1[32m 0[2mms[22m[39m
+ [32m✓[39m src/test/validation.test.ts[2m > [22mTikTok URL validation[2m > [22mrejects invalid URL: http://www.tiktok.com/@username/video/123[32m 0[2mms[22m[39m
+ [32m✓[39m src/test/validation.test.ts[2m > [22mTikTok URL validation[2m > [22mrejects invalid URL: https://www.tiktok.com/username/video/123[32m 0[2mms[22m[39m
+ [32m✓[39m src/test/validation.test.ts[2m > [22mTikTok URL validation[2m > [22mrejects invalid URL: https://www.tiktok.com/@username/video/abc[32m 0[2mms[22m[39m
+ [32m✓[39m src/test/validation.test.ts[2m > [22mTikTok URL validation[2m > [22mrejects invalid URL: https://www.tiktok.com/@username/video/123/extra[32m 0[2mms[22m[39m
+ [32m✓[39m src/test/validation.test.ts[2m > [22mTikTok URL validation[2m > [22mrejects invalid URL: https://www.tiktok.com/@username/video/123?ref=x[32m 0[2mms[22m[39m
+ [32m✓[39m src/test/validation.test.ts[2m > [22mTikTok URL validation[2m > [22mrejects invalid URL: https://tiktok.com/@username/video/123[32m 0[2mms[22m[39m
+ [32m✓[39m src/test/validation.test.ts[2m > [22mTikTok URL validation[2m > [22mrejects invalid URL: [32m 0[2mms[22m[39m
+ [32m✓[39m src/test/validation.test.ts[2m > [22mTikTok URL validation[2m > [22mrejects invalid URL: not-a-url[32m 0[2mms[22m[39m
+ [32m✓[39m src/test/validation.test.ts[2m > [22mTikTok URL validation[2m > [22mrejects invalid URL: https://www.youtube.com/@user/video/123[32m 0[2mms[22m[39m
+ [32m✓[39m src/test/validation.test.ts[2m > [22mEmail validation[2m > [22maccepts valid email: user@example.com[32m 0[2mms[22m[39m
+ [32m✓[39m src/test/validation.test.ts[2m > [22mEmail validation[2m > [22maccepts valid email: test.user@domain.co.uk[32m 0[2mms[22m[39m
+ [32m✓[39m src/test/validation.test.ts[2m > [22mEmail validation[2m > [22maccepts valid email: admin+tag@example.org[32m 0[2mms[22m[39m
+ [32m✓[39m src/test/validation.test.ts[2m > [22mEmail validation[2m > [22maccepts valid email: mod@fristajl.pl[32m 0[2mms[22m[39m
+ [32m✓[39m src/test/validation.test.ts[2m > [22mEmail validation[2m > [22mrejects invalid email: userexample.com[32m 0[2mms[22m[39m
+ [32m✓[39m src/test/validation.test.ts[2m > [22mEmail validation[2m > [22mrejects invalid email: user@[32m 0[2mms[22m[39m
+ [32m✓[39m src/test/validation.test.ts[2m > [22mEmail validation[2m > [22mrejects invalid email: user@example[32m 0[2mms[22m[39m
+ [32m✓[39m src/test/validation.test.ts[2m > [22mEmail validation[2m > [22mrejects invalid email: @example.com[32m 0[2mms[22m[39m
+ [32m✓[39m src/test/validation.test.ts[2m > [22mEmail validation[2m > [22mrejects invalid email: us er@example.com[32m 0[2mms[22m[39m
+ [32m✓[39m src/test/validation.test.ts[2m > [22mEmail validation[2m > [22mrejects invalid email: [32m 0[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m10 passed[39m[22m[90m (10)[39m
+[2m      Tests [22m [1m[32m121 passed[39m[22m[90m (121)[39m
+[2m   Start at [22m 01:30:02
+[2m   Duration [22m 4.48s[2m (transform 1.88s, setup 1.27s, import 4.70s, tests 3.64s, environment 13.14s)[22m
+

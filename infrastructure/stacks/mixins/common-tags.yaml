@@ -1,0 +1,4 @@
+vars:
+  tags:
+    ManagedBy: Terraform
+    Project: fristajl

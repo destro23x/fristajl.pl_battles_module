@@ -1,0 +1,144 @@
+# Creates/updates the admin dashboard account against the shared RDS
+# instance, using application_user_fristajl, which authenticates via IAM
+# (member of the rds_iam role, no password - see
+# infrastructure/lambda/db-user-provisioner). The admin password itself
+# comes from SSM (/fristajl/portal-admin-password), wired into the ECS task
+# definition as a secret - this workflow never sees it.
+#
+# Seeding is intentionally NOT run at backend container startup anymore (see
+# backend/src/main/kotlin/io/javalin/omeglin/UserStore.kt) - it is applied
+# here instead, as a separate, auditable step, mirroring migrate.yml.
+name: Database seed
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Optional backend image tag to seed with (default: short SHA of this commit)"
+        required: false
+        type: string
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCOUNT_ID }}
+  OIDC_AWS_ROLE_TERRAFORM: ${{ secrets.OIDC_AWS_ROLE_TERRAFORM }}
+  ECR_REPOSITORY: fristajl-backend
+  ECS_CLUSTER_NAME: applications
+  TASK_FAMILY: fristajl-db-seed
+
+concurrency:
+  group: database-seed-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  id-token: write
+  contents: read
+  issues: write
+
+jobs:
+  seed:
+    name: Run admin account seed
+    runs-on: ubuntu-latest
+    environment: prod
+
+    steps:
+      - name: Wait for manual approval
+        uses: trstringer/manual-approval@v1
+        with:
+          secret: ${{ secrets.GITHUB_TOKEN }}
+          approvers: destro23x
+          minimum-approvals: 1
+          issue-title: "Seed/rotate the admin dashboard account on prod"
+          issue-body: |
+            Approve this issue to create/update the admin dashboard account against the prod RDS instance using application_user_fristajl.
+
+            Comment `approved`/`approve`/`lgtm`/`yes` to proceed, or `denied`/`deny`/`no` to reject.
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ env.AWS_ACCOUNT_ID }}:role/${{ env.OIDC_AWS_ROLE_TERRAFORM }}
+          role-session-name: GitHub_to_AWS_via_FederatedOIDC
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Verify AWS identity
+        run: aws sts get-caller-identity
+
+      - name: Resolve backend image to seed with
+        run: |
+          set -euo pipefail
+          IMAGE_TAG="${{ github.event.inputs.image_tag }}"
+          IMAGE_TAG="${IMAGE_TAG:-${GITHUB_SHA::7}}"
+          echo "IMAGE_URI=${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ECR_REPOSITORY}:${IMAGE_TAG}" >> "$GITHUB_ENV"
+
+      - name: Resolve seed task network configuration
+        run: |
+          set -euo pipefail
+
+          SUBNET_IDS=$(aws ssm get-parameter --name "/fristajl/ecs/${TASK_FAMILY}/subnet-ids" --query 'Parameter.Value' --output text)
+          SECURITY_GROUP_ID=$(aws ssm get-parameter --name "/fristajl/ecs/${TASK_FAMILY}/security-group-id" --query 'Parameter.Value' --output text)
+
+          echo "SUBNET_IDS=$SUBNET_IDS" >> "$GITHUB_ENV"
+          echo "SECURITY_GROUP_ID=$SECURITY_GROUP_ID" >> "$GITHUB_ENV"
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.14.6"
+
+      - name: Setup Atmos
+        uses: cloudposse/github-action-setup-atmos@v2
+        with:
+          install-wrapper: true
+
+      - name: Pull vendor modules
+        working-directory: infrastructure
+        run: atmos vendor pull
+
+      - name: Apply seed task definition with the current image
+        working-directory: infrastructure
+        run: atmos terraform apply db-seed-task --stack prod -var="image=${IMAGE_URI}" -auto-approve
+
+      - name: Run seed task
+        run: |
+          set -euo pipefail
+
+          TASK_ARN=$(aws ecs run-task \
+            --cluster "$ECS_CLUSTER_NAME" \
+            --task-definition "$TASK_FAMILY" \
+            --launch-type FARGATE \
+            --network-configuration "awsvpcConfiguration={subnets=[$SUBNET_IDS],securityGroups=[$SECURITY_GROUP_ID],assignPublicIp=ENABLED}" \
+            --query 'tasks[0].taskArn' --output text)
+
+          if [ -z "$TASK_ARN" ] || [ "$TASK_ARN" = "None" ]; then
+            echo "Failed to start seed task" >&2
+            exit 1
+          fi
+
+          echo "TASK_ARN=$TASK_ARN" >> "$GITHUB_ENV"
+          echo "Started seed task: $TASK_ARN"
+
+      - name: Wait for seed task to finish
+        run: |
+          set -euo pipefail
+          aws ecs wait tasks-stopped --cluster "$ECS_CLUSTER_NAME" --tasks "$TASK_ARN"
+
+      - name: Check seed task result
+        run: |
+          set -euo pipefail
+
+          TASK_JSON=$(aws ecs describe-tasks --cluster "$ECS_CLUSTER_NAME" --tasks "$TASK_ARN")
+          EXIT_CODE=$(echo "$TASK_JSON" | jq -r '.tasks[0].containers[0].exitCode // empty')
+          STOPPED_REASON=$(echo "$TASK_JSON" | jq -r '.tasks[0].stoppedReason // empty')
+
+          echo "Stopped reason: $STOPPED_REASON"
+          echo "Container exit code: $EXIT_CODE"
+          echo "Logs: CloudWatch log group /ecs/${TASK_FAMILY}"
+
+          if [ -z "$EXIT_CODE" ] || [ "$EXIT_CODE" != "0" ]; then
+            echo "Seed task failed" >&2
+            exit 1
+          fi
