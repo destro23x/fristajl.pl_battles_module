@@ -9,16 +9,16 @@ export class Chat {
         this.#peerConnection = peerConnection;
         this.updateUi("NOT_CONNECTED");
         this.#sendBtn.addEventListener("click", () => {
-            if (this.#peerConnection.dataChannel === null) return console.log("No data channel");
+            if (this.#peerConnection.dataChannel === null) return;
             if (this.#input.value.trim() === "") return this.#input.value = "";
             this.#addToLog("local", this.#input.value);
-            this.#peerConnection.dataChannel.send(JSON.stringify({chat: this.#input.value}));
+            this.#peerConnection.sendData({ type: "CHAT", text: this.#input.value });
             this.#input.value = "";
         });
 
         this.#input.addEventListener("keyup", event => {
             if (event.key !== "Enter") return;
-            this.#sendBtn.click(); // reuse the click handler
+            this.#sendBtn.click();
         });
     }
 
@@ -26,14 +26,15 @@ export class Chat {
         if (["NOT_CONNECTED", "CONNECTING", "CONNECTED"].includes(state)) {
             this.#log.innerHTML = "";
         }
-        if (state === "NOT_CONNECTED") this.#addToLog("server", "Click 'Find Stranger' to connect with a random person!");
-        if (state === "CONNECTING") this.#addToLog("server", "Finding a stranger for you to chat with...");
-        if (state === "CONNECTED") this.#addToLog("server", "You're talking to a random person. Say hi!");
-        if (state === "DISCONNECTED_LOCAL") this.#addToLog("server", "You disconnected");
-        if (state === "DISCONNECTED_REMOTE") this.#addToLog("server", "Stranger disconnected");
+        if (state === "NOT_CONNECTED") this.addServerMessage("Click 'Find Opponent' to get matched for a freestyle battle!");
+        if (state === "CONNECTING")    this.addServerMessage("🔍 Searching for an opponent...");
+        if (state === "CONNECTED")     this.addServerMessage("🎤 Opponent found! Get ready to battle.");
+        if (state === "DISCONNECTED_LOCAL")  this.addServerMessage("You left the battle.");
+        if (state === "DISCONNECTED_REMOTE") this.addServerMessage("Opponent disconnected.");
     }
 
-    addRemoteMessage = (message) => this.#addToLog("remote", message)
+    addRemoteMessage = (text) => this.#addToLog("remote", text);
+    addServerMessage = (text) => this.#addToLog("server", text);
 
     #addToLog(owner, message) {
         this.#log.insertAdjacentHTML("beforeend", `<div class="message ${owner}">${message}</div>`);

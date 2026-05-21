@@ -3,34 +3,79 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Omeglin - Talk to strangers</title>
+    <title>FreestyleArena — Rap Battle</title>
     <link href="/favicon.ico" type="image/svg+xml" rel="icon">
     <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
 <header>
-    <img src="/omeglin.svg" alt="Omeglin logo" class="logo">
+    <span class="logo">🎤 FreestyleArena</span>
+    <div class="scoreboard">
+        <span class="wins">W <span id="scoreWins">0</span></span>
+        <span class="losses">L <span id="scoreLosses">0</span></span>
+        <span id="streakDisplay">— 0</span>
+    </div>
 </header>
 <main>
     <div class="video-panel">
         <section class="remote">
+            <span class="player-badge opponent">OPPONENT</span>
             <img src="/tail-spin.svg" class="spinner" alt="">
             <video id="remoteVideo" autoplay playsinline></video>
+            <div class="turn-overlay their-turn">🎤 RAPPING</div>
         </section>
         <section class="local">
+            <span class="player-badge you">YOU</span>
             <video id="localVideo" autoplay playsinline muted></video>
+            <div class="turn-overlay my-turn">🎤 YOUR TURN</div>
         </section>
     </div>
     <div class="chat-panel">
-        <div class="chat-log" id="chatLog"></div>
-        <div class="chat-controls">
-            <div class="pairing">
-                <button id="startPairing">Find stranger</button>
-                <button id="abortPairing">Cancel</button>
-                <button id="leavePairing">Disconnect</button>
+        <div class="battle-bar">
+            <div class="battle-left">
+                <div class="topic-row">
+                    <span class="label">TOPIC</span>
+                    <span id="topicText">—</span>
+                </div>
+                <div class="beat-row">
+                    <span class="label">BEAT</span>
+                    <span id="beatName">—</span>
+                    <button id="beatMute" class="beat-mute" title="Mute/Unmute">🔊</button>
+                </div>
             </div>
-            <div class="messaging">
-                <input type="text" placeholder="Type a message..." id="chatInput">
+            <div class="battle-bar-right">
+                <div class="timer" id="timerDisplay">—</div>
+                <div class="dur-picker" id="durPicker">
+                    <span class="label">Round:</span>
+                    <button class="dur" data-dur="30">30s</button>
+                    <button class="dur active" data-dur="60">60s</button>
+                    <button class="dur" data-dur="90">90s</button>
+                </div>
+                <div class="beat-url-row">
+                    <input type="url" id="beatUrlInput" class="beat-url-input"
+                           placeholder="🔗 Custom beat URL (.mp3) — optional">
+                </div>
+            </div>
+        </div>
+        <div class="chat-log" id="chatLog"></div>
+        <div class="vote-panel" id="votePanel">
+            <p>⚖️ Who won the battle?</p>
+            <div class="vote-btns">
+                <button id="voteMe"   class="vote me">🔥 I Won</button>
+                <button id="voteDraw" class="vote draw">🤝 Draw</button>
+                <button id="voteOpp"  class="vote opp">👑 They Won</button>
+            </div>
+            <small id="voteHint">Cast your vote above</small>
+        </div>
+        <div class="controls">
+            <div class="pairing">
+                <button id="startPairing">🔍 Find Opponent</button>
+                <button id="abortPairing">✖ Cancel</button>
+                <button id="startBattle">⚡ Start Battle</button>
+                <button id="nextOpponent">➡ Next Opponent</button>
+            </div>
+            <div class="chat-input-row">
+                <input type="text" placeholder="Chat..." id="chatInput">
                 <button id="chatSend">Send</button>
             </div>
         </div>

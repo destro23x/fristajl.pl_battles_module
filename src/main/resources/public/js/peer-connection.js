@@ -2,8 +2,8 @@ export class PeerConnection {
     sdpExchange; // WebSocket with listeners for exchanging SDP offers and answers
     peerConnection; // RTCPeerConnection for exchanging media (with listeners for media and ICE)
     dataChannel; // RTCDataChannel for exchanging signaling and chat messages (with listeners)
-    state; // NOT_CONNECTED, CONNECTING, CONNECTED, DISCONNECTED_SELF, DISCONNECTED_REMOTE
-    options; // constructor args {onStateChange, onLocalMedia, onRemoteMedia, onChatMessage}
+    state; // NOT_CONNECTED, CONNECTING, CONNECTED, DISCONNECTED_LOCAL, DISCONNECTED_REMOTE
+    options; // constructor args {onStateChange, onLocalMedia, onRemoteMedia, onDataMessage, onRole}
     localStream; // MediaStream from local webcam and microphone
 
     constructor(options) {
@@ -75,14 +75,18 @@ export class PeerConnection {
 
     setupDataChannel(channel) { // RTCDataChannel for exchanging signaling and chat messages
         channel.onmessage = event => {
-            console.log("Received data channel message", event.data);
             if (event.data === "BYE") {
                 this.disconnect("REMOTE");
-                return console.log("Received BYE message, closing connection");
+                return;
             }
-            this.options.onChatMessage(JSON.parse(event.data).chat);
+            this.options.onDataMessage(JSON.parse(event.data));
         }
         return channel;
+    }
+
+    sendData(obj) {
+        if (this.dataChannel === null) return console.log("No data channel");
+        this.dataChannel.send(JSON.stringify(obj));
     }
 
     sendBye() {
@@ -104,11 +108,12 @@ export class PeerConnection {
     }
 
     handlePartnerFound(instructions) {
+        this.options.onRole?.(instructions === "GO_FIRST" ? "FIRST" : "SECOND");
         if (instructions !== "GO_FIRST") {
-            return console.log("Partner found, waiting for SDP offer ..."); // only for the "answerer" (the one who receives the SDP offer)
+            return console.log("Partner found, waiting for SDP offer ..."); // only for the "answerer"
         }
         console.log("Partner found, creating SDP offer and data channel");
-        this.tryHandle("PARTNER_FOUND", async () => { // only for the "offerer" (the one who sends the SDP offer)
+        this.tryHandle("PARTNER_FOUND", async () => { // only for the "offerer"
             this.dataChannel = this.setupDataChannel(this.peerConnection.createDataChannel("data-channel"));
             this.localStream.getTracks().forEach(track => this.peerConnection.addTrack(track, this.localStream));
             const offer = await this.peerConnection.createOffer();

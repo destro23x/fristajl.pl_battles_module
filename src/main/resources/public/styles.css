@@ -1,8 +1,404 @@
 :root {
-    --spacing: 12px;
-    --border-radius-large: 8px;
-    --border-radius-small: 4px;
+    --sp: 12px;
+    --br: 8px;
+    --br-sm: 5px;
+    --bg: #0d0d1a;
+    --bg-panel: #13132a;
+    --bg-input: #1a1a36;
+    --border: #2a2a50;
+    --accent: #f7c948;
+    --red: #ff4e4e;
+    --green: #00e676;
+    --text: #e0e0ff;
+    --text-dim: #6060a0;
+    --timer-ok: #00e676;
+    --timer-warn: #ffb300;
+    --timer-danger: #ff4444;
 }
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    display: grid;
+    grid-template-rows: auto 1fr;
+    gap: var(--sp);
+    height: 100vh;
+    padding: var(--sp);
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+}
+
+/* ── Header ─────────────────────────────────────────────────────── */
+header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 4px;
+}
+
+.logo {
+    font-size: 1.3rem;
+    font-weight: 900;
+    letter-spacing: .05em;
+    color: var(--accent);
+    text-transform: uppercase;
+}
+
+.scoreboard {
+    display: flex;
+    gap: 18px;
+    font-size: .85rem;
+    font-weight: 700;
+}
+.wins   { color: var(--green); }
+.losses { color: var(--red); }
+#streakDisplay { color: var(--accent); }
+
+/* ── Main grid ───────────────────────────────────────────────────── */
+main {
+    display: grid;
+    grid-template-columns: 4fr 7fr;
+    gap: var(--sp);
+    overflow: auto;
+    min-height: 0;
+}
+
+/* ── Video panel ─────────────────────────────────────────────────── */
+.video-panel {
+    display: grid;
+    grid-template-rows: 1fr 1fr;
+    gap: var(--sp);
+    min-height: 0;
+}
+
+.video-panel section {
+    position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: var(--bg-panel);
+    border-radius: var(--br);
+    border: 2px solid var(--border);
+    overflow: hidden;
+    transition: border-color .3s, box-shadow .3s;
+
+    & video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+
+    &.local video { transform: scaleX(-1); }
+}
+
+.player-badge {
+    position: absolute;
+    top: 8px; left: 8px;
+    font-size: .6rem;
+    font-weight: 900;
+    letter-spacing: .1em;
+    padding: 2px 8px;
+    border-radius: 3px;
+    z-index: 2;
+}
+.player-badge.opponent { background: var(--red);    color: #fff; }
+.player-badge.you      { background: var(--accent); color: #000; }
+
+.turn-overlay {
+    display: none;
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    text-align: center;
+    padding: 10px;
+    font-weight: 900;
+    font-size: .85rem;
+    letter-spacing: .06em;
+    backdrop-filter: blur(4px);
+    z-index: 2;
+}
+.turn-overlay.their-turn { background: rgba(255, 78, 78, .8); }
+.turn-overlay.my-turn    { background: rgba(247, 201, 72, .9); color: #000; }
+
+/* ── Chat panel ──────────────────────────────────────────────────── */
+.chat-panel {
+    display: grid;
+    grid-template-rows: auto 1fr auto auto;
+    gap: var(--sp);
+    padding: var(--sp);
+    background: var(--bg-panel);
+    border-radius: var(--br);
+    border: 1px solid var(--border);
+    min-height: 0;
+}
+
+/* Battle bar */
+.battle-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp);
+    background: var(--bg-input);
+    padding: 8px var(--sp);
+    border-radius: var(--br-sm);
+    flex-wrap: wrap;
+}
+
+.battle-left {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+    min-width: 0;
+}
+
+.topic-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+    min-width: 0;
+    & span:last-child {
+        font-weight: 800;
+        color: var(--accent);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+}
+
+.beat-row {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    & span:nth-child(2) {
+        font-weight: 700;
+        color: var(--green);
+        font-size: .85rem;
+    }
+}
+
+.beat-mute {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 0 7px;
+    height: 24px;
+    font-size: .75rem;
+    border-radius: 3px;
+    &:hover { border-color: var(--accent); color: var(--accent); background: transparent; }
+}
+
+.battle-bar-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-shrink: 0;
+}
+
+.label {
+    font-size: .6rem;
+    font-weight: 900;
+    letter-spacing: .1em;
+    color: var(--text-dim);
+    flex-shrink: 0;
+}
+
+.timer {
+    font-size: 2rem;
+    font-weight: 900;
+    font-variant-numeric: tabular-nums;
+    color: var(--timer-ok);
+    min-width: 2ch;
+    text-align: right;
+    transition: color .3s;
+    &.warn   { color: var(--timer-warn); }
+    &.danger { color: var(--timer-danger); animation: pulse .5s ease infinite alternate; }
+}
+
+@keyframes pulse { from { opacity: 1; } to { opacity: .35; } }
+
+.dur-picker {
+    display: none;          /* shown by state CSS below */
+    align-items: center;
+    gap: 5px;
+}
+
+.dur {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    padding: 2px 9px;
+    font-size: .72rem;
+    font-weight: 700;
+    border-radius: 3px;
+    height: auto;
+    cursor: pointer;
+    &.active, &:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+        background: rgba(247, 201, 72, .1);
+    }
+}
+
+/* Chat log */
+.chat-log {
+    padding: var(--sp);
+    background: var(--bg);
+    overflow-y: auto;
+    border-radius: var(--br-sm);
+    line-height: 1.55;
+    min-height: 0;
+    .message.local   { color: var(--accent); &::before { content: "You: "; font-weight: bold; } }
+    .message.remote  { color: var(--red);    &::before { content: "Opp: "; font-weight: bold; } }
+    .message.server  { color: var(--text-dim); font-style: italic; font-size: .85rem; }
+}
+
+/* Voting panel */
+.vote-panel {
+    display: none;          /* shown by state CSS below */
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 10px var(--sp);
+    background: var(--bg-input);
+    border-radius: var(--br-sm);
+    border: 1px solid var(--border);
+    & p { font-weight: 900; }
+}
+.vote-btns { display: flex; gap: 8px; }
+.vote { font-weight: 800; font-size: .82rem; padding: 0 14px; }
+.vote.me   { background: var(--green);  color: #000; &:hover { background: #00c853; } }
+.vote.draw { background: #5c6bc0; &:hover { background: #3f51b5; } }
+.vote.opp  { background: #607d8b; &:hover { background: #546e7a; } }
+.vote:disabled { opacity: .35; cursor: not-allowed; }
+#voteHint { font-size: .78rem; color: var(--text-dim); }
+
+/* Controls */
+.controls {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+.chat-input-row {
+    display: flex;
+    flex: 1;
+    gap: 8px;
+    & input {
+        flex: 1;
+        height: 40px;
+        padding: 0 12px;
+        background: var(--bg-input);
+        border: 1px solid var(--border);
+        border-radius: var(--br-sm);
+        color: var(--text);
+        font-size: .9rem;
+        &:focus { outline: none; border-color: var(--accent); }
+        &::placeholder { color: var(--text-dim); }
+    }
+}
+
+/* Base button */
+button {
+    background: var(--accent);
+    color: #000;
+    border: 0;
+    border-radius: var(--br-sm);
+    height: 40px;
+    font-weight: 700;
+    padding: 0 14px;
+    cursor: pointer;
+    font-size: .83rem;
+    white-space: nowrap;
+    &:hover { background: #e6b800; }
+}
+
+/* ── State-based visibility ──────────────────────────────────────── */
+
+/* Pairing buttons: hidden by default */
+.pairing button { display: none; }
+
+body:is([data-state=NOT_CONNECTED],
+        [data-state=DISCONNECTED_LOCAL],
+        [data-state=DISCONNECTED_REMOTE]) #startPairing { display: block; }
+
+[data-state=CONNECTING] #abortPairing { display: block; }
+
+/* Start Battle — only FIRST user while waiting */
+[data-role=FIRST][data-state=CONNECTED] #startBattle { display: block; }
+
+/* Next Opponent — once paired */
+body:is([data-state=CONNECTED],
+        [data-state=MY_TURN],
+        [data-state=THEIR_TURN],
+        [data-state=VOTING],
+        [data-state=RESULT]) #nextOpponent { display: block; }
+
+/* Show beat row during battle states */
+body:is([data-state=MY_TURN], [data-state=THEIR_TURN], [data-state=VOTING], [data-state=RESULT]) .beat-row { display: flex; }
+
+/* Beat URL input — visible only for FIRST user in CONNECTED state */
+.beat-url-row { display: none; }
+body[data-role=FIRST][data-state=CONNECTED] .beat-url-row { display: flex; }
+
+.beat-url-input {
+    width: 100%;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: var(--br-sm);
+    color: var(--text);
+    font-size: .8rem;
+    padding: 5px 8px;
+    outline: none;
+    &::placeholder { color: var(--text-dim); }
+    &:focus { border-color: var(--accent); }
+}
+
+/* Duration picker — FIRST user in CONNECTED state */
+[data-role=FIRST][data-state=CONNECTED] .dur-picker { display: flex; }
+
+/* Voting panel */
+body:is([data-state=VOTING], [data-state=RESULT]) .vote-panel { display: flex; }
+
+/* Hide vote buttons after result */
+[data-state=RESULT] .vote-btns { display: none; }
+
+/* Spinner */
+.spinner { display: none; }
+[data-state=CONNECTING] .spinner { display: block; }
+
+/* Remote video: hide until connected */
+body:not([data-state=CONNECTED]):not([data-state=MY_TURN]):not([data-state=THEIR_TURN]):not([data-state=VOTING]):not([data-state=RESULT]) .remote video { display: none; }
+
+/* Chat input: disabled unless in session */
+body:not([data-state=CONNECTED]):not([data-state=MY_TURN]):not([data-state=THEIR_TURN]):not([data-state=VOTING]):not([data-state=RESULT]) .chat-input-row {
+    filter: grayscale(1);
+    opacity: .5;
+    pointer-events: none;
+}
+
+/* Turn overlays */
+[data-state=MY_TURN]    .my-turn    { display: block; }
+[data-state=THEIR_TURN] .their-turn { display: block; }
+
+/* Video glow on active turn */
+[data-state=MY_TURN]    .video-panel .local  { border-color: var(--accent) !important; box-shadow: 0 0 20px rgba(247,201,72,.35); }
+[data-state=THEIR_TURN] .video-panel .remote { border-color: var(--red)    !important; box-shadow: 0 0 20px rgba(255,78,78,.35);  }
+
+/* ── Mobile ──────────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+    main {
+        grid-template-columns: none;
+        grid-template-rows: 1fr 2fr;
+    }
+    .video-panel {
+        grid-template-rows: none;
+        grid-template-columns: 1fr 1fr;
+    }
+    .battle-bar { flex-direction: column; align-items: flex-start; }
+    .timer { font-size: 1.4rem; }
+}
+
 
 * {
     box-sizing: border-box;
