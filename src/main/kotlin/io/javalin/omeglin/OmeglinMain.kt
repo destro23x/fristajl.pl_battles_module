@@ -16,16 +16,14 @@ fun main() {
         config.routes.ws("/api/matchmaking", Matchmaker::websocket)
         if (useHttps) {
             config.jetty.modifyServer { server ->
-                server.connectors.forEach { it.stop(); it.destroy() }
-                server.connectors = emptyArray()
                 val ssl = SslContextFactory.Server()
-                ssl.keyStorePath     = keystorePath
-                ssl.keyStorePassword = keystorePass
+                ssl.keyStorePath       = keystorePath
+                ssl.keyStorePassword   = keystorePass
                 ssl.keyManagerPassword = keystorePass
                 val https = ServerConnector(server, ssl)
                 https.host = "0.0.0.0"
                 https.port = 7070
-                server.addConnector(https)
+                server.connectors = arrayOf(https)
             }
         }
     }.start("0.0.0.0", if (useHttps) 0 else 7070).also {
